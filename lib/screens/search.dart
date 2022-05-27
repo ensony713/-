@@ -18,7 +18,7 @@ class _ThirdState extends State<third> {
   late GoogleMapController _controller; // 지도 컨트롤러
   static const CameraPosition _kGooglePlex = CameraPosition( // 초기 카메라 위치
     target: LatLng(37.011289, 127.265021),
-    zoom: 15.0,
+    zoom: 14.0,
   );
   LatLng _currentPosition = const LatLng(37.011287, 127.265188); // 현재 위치
   late Marker _currentMark; // 현재 위치 마커
@@ -35,15 +35,26 @@ class _ThirdState extends State<third> {
   String facilityWidth = "123m"; // 현재 위치에서 선택한 시설까지의 거리
   String category = ''; // 선택한 카테고리
   late LatLng point; // 선택된 지점
+  Map<PolylineId, Polyline> _polylines = <PolylineId, Polyline> {};
 
   bool _isNear = false; // 선택된 마커가 가장 가까운 지점이면 true
   bool _onMarkerTab = false; // 마커가 선택된 상태면 true
+  bool _onSalonTab = false;
+  bool _onPakrTab = false;
+  bool _onHotelTab = false;
+  bool _onPetTab = false;
+  bool _onHospitalTab = false;
 
   @override
   void initState() {
     super.initState();
     getLocation(); // 현재 위치를 가져옴
     setIcon(); // 현재 위치 아이콘 설정
+    _onSalonTab = false;
+    _onPakrTab = false;
+    _onHotelTab = false;
+    _onPetTab = false;
+    _onHospitalTab = false;
   }
 
   void setIcon() async {
@@ -104,11 +115,16 @@ class _ThirdState extends State<third> {
                       print("위치 정보 성공적으로 받아옴 " + sy + ", " + dong);
                       _now = sy + ", " + dong;
 
-                      _controller.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition, 15.0));
+                      _controller.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition, 14.0));
 
                       setState(() {
                         _setPosition = true;
                         _markers.add(_createMarker());
+                        _onSalonTab = false;
+                        _onPakrTab = false;
+                        _onHotelTab = false;
+                        _onPetTab = false;
+                        _onHospitalTab = false;
                       });
                     },
                     behavior: HitTestBehavior.opaque,
@@ -127,27 +143,43 @@ class _ThirdState extends State<third> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     InkWell(
-                      child: Image.asset('images/icons/salon.png', width: 30, height: 30,),
+                      child: Container(
+                          child: Image.asset('images/icons/salon.png', width: 30, height: 30,),
+                        color: _onSalonTab ? Colors.lightGreen[300] : Colors.lightGreen[100],
+                        padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
+                      ),
                       onTap: _chooseSalon,
                     ),
                     const SizedBox(width: 40,),
                     InkWell(
-                      child: Image.asset('images/icons/park.png', width: 30, height: 30,),
+                      child: Container(child: Image.asset('images/icons/park.png', width: 30, height: 30,),
+                        color: _onPakrTab ? Colors.lightGreen[300] : Colors.lightGreen[100],
+                        padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
+                      ),
                         onTap: _choosePark,
                     ),
                     const SizedBox(width: 40,),
                     InkWell(
-                      child: Image.asset('images/icons/hotel.png', width: 30, height: 30,),
+                      child: Container(child: Image.asset('images/icons/hotel.png', width: 30, height: 30,),
+                        color: _onHotelTab ? Colors.lightGreen[300] : Colors.lightGreen[100],
+                        padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
+                      ),
                       onTap: _chooseHotel,
                     ),
                     const SizedBox(width: 40,),
                     InkWell(
-                      child: Image.asset('images/icons/pets.png', width: 30, height: 30,),
+                      child: Container(child: Image.asset('images/icons/pets.png', width: 30, height: 30,),
+                        color: _onPetTab ? Colors.lightGreen[300] : Colors.lightGreen[100],
+                        padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
+                      ),
                       onTap: _choosePets,
                     ),
                     const SizedBox(width: 40,),
                     InkWell(
-                      child: Image.asset('images/icons/hospital.png', width: 30, height: 30,),
+                      child: Container(child: Image.asset('images/icons/hospital.png', width: 30, height: 30,),
+                        color: _onHospitalTab ? Colors.lightGreen[300] : Colors.lightGreen[100],
+                        padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
+                      ),
                       onTap: _chooseHospital,
                     ),
                   ],
@@ -214,6 +246,7 @@ class _ThirdState extends State<third> {
                         print('$facilityName까지의 길안내를 출력합니다.');
                         print('$_currentPosition부터 $point까지');
                         // 길 안내 google Directions API 이용
+                        _navigation();
                         },
                         child: const Text('길 안내'),
                         style: TextButton.styleFrom(
@@ -290,7 +323,7 @@ class _ThirdState extends State<third> {
     );
     print(distance);
 
-    if (distance < 1500) { // 현재 위치 반경 약 1.5km 이내의 시설을 필터링하기 위한 부분
+    if (distance < 2000) { // 현재 위치 반경 약 1.5km 이내의 시설을 필터링하기 위한 부분
       if (_minPoint > distance) {
         _minPoint = distance;
         _rcPoint = p;
@@ -325,7 +358,7 @@ class _ThirdState extends State<third> {
   _markerTap(String name, String addr, LatLng p, int i, bool near) async {
     print("주소 : " + addr);
 
-    var exactDistance = await Geolocator.distanceBetween(
+    var exactDistance = Geolocator.distanceBetween(
         _currentPosition.latitude, _currentPosition.longitude,
         p.latitude, p.longitude);
     String distanceMater = exactDistance.toInt().toString() + "m";
@@ -346,8 +379,59 @@ class _ThirdState extends State<third> {
     });
   }
 
+  Future<String> get _localPath async {
+    final directory = await getApplicationDocumentsDirectory();
+    return directory.path;
+  }
+  Future<File> get _localFile async {
+    final path = await _localPath;
+    return File('$path/response.txt');
+  }
+  Future<File> get _getDB async {
+    final path = await _localPath;
+    return File('$path/length_walk.txt');
+  }
+  Future<File> writeContext(context) async {
+    final file = await _localFile;
+    return file.writeAsString('$context');
+  }
+
+  void _navigation() async {
+    if (facilityName == "이름") {
+      print('지점 선택 없이 길찾기가 호출됨');
+      return;
+    }
+
+    final url = Uri.parse("https://maps.googleapis.com/maps/api/directions/json"
+        "?origin=${_currentPosition.latitude},${_currentPosition.longitude}" // 출발점
+        "&destination=$facilityName" // 도착점
+        "&mode=transit" // 어떤 방식의 길안내인지
+        "&language=ko" // 반환값의 언어
+        "&key=AIzaSyCxnMmwLCN6PlyGaqXd8Z7BTqCbVQ35bXk");
+
+    final response = await http.get(url);
+    print("길 안내 결과 받아옴");
+    //writeContext(response.body); // 받아온 결과를 파일로 저장
+
+    //String path = jsonDecode(response.body)['routes'][0]['legs'][0];
+    print(jsonDecode(response.body)['routes'][0]['legs'][0]['steps'][0]['start_location']);
+    print(jsonDecode(response.body)['routes'][0]['legs'][0]['steps'][0]['end_location']);
+
+  }
+
+  void viewRoutes() {
+
+  }
+
   /// 미용실 button event handler
   void _chooseSalon() async{
+
+    _onSalonTab = true;
+    _onPakrTab = false;
+    _onHotelTab = false;
+    _onPetTab = false;
+    _onHospitalTab = false;
+
     _onMarkerTab = false;
     _markers.clear();
     _markers.add(_currentMark);
@@ -388,6 +472,13 @@ class _ThirdState extends State<third> {
 
   /// 병원 button event handler
   void _chooseHospital() async{
+
+    _onSalonTab = false;
+    _onPakrTab = false;
+    _onHotelTab = false;
+    _onPetTab = false;
+    _onHospitalTab = true;
+
     _onMarkerTab = false;
     _markers.clear();
     _markers.add(_currentMark);
@@ -428,6 +519,13 @@ class _ThirdState extends State<third> {
 
   /// 숙박시설 button event handler
   void _chooseHotel() async{
+
+    _onSalonTab = false;
+    _onPakrTab = false;
+    _onHotelTab = true;
+    _onPetTab = false;
+    _onHospitalTab = false;
+
     _onMarkerTab = false;
     _markers.clear();
     _markers.add(_currentMark);
@@ -467,6 +565,13 @@ class _ThirdState extends State<third> {
 
   /// 공원 button event handler
   void _choosePark() async{
+
+    _onSalonTab = false;
+    _onPakrTab = true;
+    _onHotelTab = false;
+    _onPetTab = false;
+    _onHospitalTab = false;
+
     _onMarkerTab = false;
     _markers.clear();
     _markers.add(_currentMark);
@@ -506,6 +611,13 @@ class _ThirdState extends State<third> {
 
   /// 반려동물 용품점 button event handler
   void _choosePets() async {
+
+    _onSalonTab = false;
+    _onPakrTab = false;
+    _onHotelTab = false;
+    _onPetTab = true;
+    _onHospitalTab = false;
+
     _onMarkerTab = false;
     _markers.clear();
     _markers.add(_currentMark);
@@ -543,26 +655,5 @@ class _ThirdState extends State<third> {
         print("전달받은 시설물 개수가 20개 미만이에요...");
       }
     }
-  }
-
-  Future<String> get _localPath async{
-    final directory = await getApplicationDocumentsDirectory();
-    return directory.path;
-  }
-
-  Future<File> get _localFile async {
-    final path = await _localPath;
-    return File('$path/data.txt');
-  }
-
-  /* 두 지점 사이의 거리를 구하는 함수
-  1. 거리를 정확히 구하지 않아도 되고(순위만 알면 됨)
-  2. 두 지점 사이의 거리가 매우 짧기 때문에 (보통 100km이내)
-  그냥 피타고라스 정리로 계산함
-   */
-  double _distance(LatLng a, LatLng b) {
-    double v = (a.latitude - b.latitude) * (a.latitude - b.latitude) * 1000;
-    double h = (a.longitude - b.longitude) * (a.longitude - b.longitude) * 1000;
-    return sqrt(v * v + h * h);
   }
 }

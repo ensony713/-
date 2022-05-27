@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:walking_googlemap/screens/diary.dart';
 
 class Length extends StatefulWidget {
   const Length({Key? key}) : super(key: key);
@@ -32,6 +35,7 @@ class _LengthState extends State<Length> {
   late Marker _destinationPoint = const Marker(markerId: MarkerId("non")); // 목적지 마커
 
   List<LatLng> _track = []; // 이동 경로를 저장할 배열
+  Map<PolylineId, Polyline> _polylines = <PolylineId, Polyline>{ };
 
   double _lenght = 0; // 오늘 산책한 총 이동 거리
   double _walkingLength = 0; // 목적지까지 남은 잔여 거리
@@ -41,7 +45,7 @@ class _LengthState extends State<Length> {
 
   String getToday() {
     DateTime now = DateTime.now();
-    DateFormat format = DateFormat('yyyy/MM/dd');
+    DateFormat format = DateFormat('yyyyMMdd');
     today = format.format(now);
     return today;
   }
@@ -82,22 +86,7 @@ class _LengthState extends State<Length> {
               Padding(
                 padding: EdgeInsets.fromLTRB(deviceWidth * 0.08, deviceHeight * 0.01, deviceWidth * 0.08, deviceHeight * 0.005),
                 child: TextField(controller: _destinationController, // 목적지 입력 필드
-                  onSubmitted: (String value) async {
-                  await showDialog<void>(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: const Text('목적지'),
-                          content: Text(value),
-                          actions: <Widget>[
-                            TextButton(onPressed: () {
-                              Navigator.pop(context);
-                              },
-                              child: const Text('OK'),
-                            )
-                          ],
-                        );
-                      });},
+                  onSubmitted: _inputDestination,
                   decoration: const InputDecoration(
                       labelText: '목적지',
                       hintText: '이곳에 목적지를 입력해주세요',
@@ -137,18 +126,10 @@ class _LengthState extends State<Length> {
                   onCameraMove: (_) {},
                   myLocationButtonEnabled: false,
                   markers: _markers.toSet(),
-                  onTap: (chosen) { // 왜 탭하면 밀릴까.... 왜 이전에 터치한 지점이 마커로 뜰까......
+                  polylines: Set<Polyline>.of(_polylines.values),
+                  onTap: (chosen) async { // 왜 탭하면 밀릴까.... 왜 이전에 터치한 지점이 마커로 뜰까......
                     if(!_isWalking) { // 산책 중이 아닐 때만 탭한 위치에 마커 추가
-                      if (_destinationPoint.markerId != const MarkerId('non')) {
-                        _markers.remove(_destinationPoint);
-                      }
-                      _destinationPoint =
-                          Marker(markerId: const MarkerId("destination"),
-                            position: chosen,
-                          );
-                      setState(() {
-                        _markers.add(_destinationPoint);
-                      });
+                      _addDestination(chosen, 'destination');
                     } // 산책 중일 땐 지도에 들어오는 터치 무시
                   },
                   //zoomControlsEnabled: false,
@@ -163,22 +144,43 @@ class _LengthState extends State<Length> {
                 TextButton( // 길 안내 시작 / 산책 완료 버튼 위젯
                   onPressed: () {
                     if (_isWalking) { // 산책 중일 때
-                      print("산책 완료 버튼");
+                      print("산책 완료 버튼 선택됨");
                       // 목적지까지의 거리 0으로 초기화
+                      _walkingLength = 0;
+
                       // db에 총 산책 거리 갱신 -> 일기 페이지에 전달하는 편이..
+
+                      // 지도에서 목적지 마커 삭제
+                      setState((){
+                        _markers.remove(_destinationPoint);
+                      });
+
                       // _startPoint랑 _destinationPoint 초기화
+                      _startPoint = const Marker(markerId: MarkerId("non"));
+                      _destinationPoint = const Marker(markerId: MarkerId("non"));
+
                       // 일기를 쓸지 질의하는 창 띄우기
                       // 일기 작성이 선택되면 일기 쪽으로 이동시키는 편이 낫지 않을지?
+                      _askMakeDiary(context);
+
                       _track = []; // 이동 경로 초기화
+                      _polylines = <PolylineId, Polyline>{};
                     } else { // 산책 중이 아닐 때
-                      print("길 안내 시작 버튼");
+                      print("길 안내 시작 버튼 선택됨");
                       // 시작지점 저장
                       _startPoint = Marker(markerId: const MarkerId("start"),
                         position: _currentPosition,
                       );
                       // 목적지까지 길안내 시작
+                      _navigation();
+
                       // 이동한 경로를 기록해 지도에 띄우기 시작
-                      _track.add(_startPoint.position);
+                      Polyline line = Polyline(polylineId: const PolylineId('walking tracker'),
+                        color: Colors.green,
+                        points: _track,
+                        width: 7,
+                      );
+                      _polylines[const PolylineId('track')] = line;
                     }
 
                     setState(() { // 산책 상태 갱신
@@ -293,5 +295,106 @@ class _LengthState extends State<Length> {
         });
       }
     });
+  }
+
+  // 목적지 마커를 추가하는 메소드
+  void _addDestination(var point, String name) {
+    if (_destinationPoint.markerId != const MarkerId('non')) {
+      _markers.remove(_destinationPoint);
+    }
+
+    _destinationPoint = Marker(markerId: MarkerId(name),
+      position: point,
+    );
+
+    var dLength = Geolocator.distanceBetween(_currentPosition.latitude, _currentPosition.longitude,
+        point.latitude, point.longitude);
+
+    setState((){
+      _walkingLength = double.parse(dLength.toStringAsFixed(2));
+      _markers.add(_destinationPoint);
+    });
+  }
+
+  // 일기 작성을 질의하는 창을 띄우는 메소드
+  void _askMakeDiary(BuildContext context) {
+    showDialog(context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: const Text("일기를 작성하시겠습니까?"),
+            actions: [
+              TextButton(
+                  onPressed: (){
+                    print("일기 작성 버튼 클릭");
+                    Navigator.of(context).pop();
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => Second()));
+                    },
+                  child: const Text("예")),
+              TextButton(
+                  onPressed: (){
+                    print("일기 작성 하지 않기 클릭");
+                    Navigator.of(context).pop();
+                    },
+                  child: const Text("아니오")),
+            ],
+          );
+        }
+    );
+  }
+
+  // 목적지를 입력하면 위경도를 받아오는 메소드
+  void _inputDestination(String value) async{
+
+    final url = Uri.parse("https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
+        "?fields=geometry" // 반환 받을 내용
+        "&input=$value" // 검색어
+        "&inputtype=textquery"
+        "&locationbias=circle%3A2000${_currentPosition.latitude}%2C${_currentPosition.longitude}" // 검색 중심지
+        "&language=ko" // 반환값의 언어
+        "&key=AIzaSyCxnMmwLCN6PlyGaqXd8Z7BTqCbVQ35bXk");
+
+    final response = await http.get(url);
+
+
+    double lat = jsonDecode(response.body)['candidates'][0]['geometry']['location']['lat'];
+    double lng = jsonDecode(response.body)['candidates'][0]['geometry']['location']['lng'];
+
+    _addDestination(LatLng(lat, lng), value);
+
+    print('목적지 갱신');
+  }
+
+  // 길 찾기 메소드
+  void _navigation() async {
+    if (_destinationPoint.markerId == const MarkerId('non') || _startPoint.markerId == const MarkerId('non')) {
+      print('지점 설정 없이 길찾기가 호출됨');
+      return;
+    }
+
+    final url = Uri.parse("https://maps.googleapis.com/maps/api/directions/json"
+        "?origin=${_currentPosition.latitude},${_currentPosition.longitude}" // 출발점
+        "&destination=${_destinationPoint.position.latitude},${_destinationPoint.position.longitude}" // 도착점
+        "&mode=walking" // 어떤 방식의 길안내인지
+        "&language=ko" // 반환값의 언어
+        "&key=AIzaSyCxnMmwLCN6PlyGaqXd8Z7BTqCbVQ35bXk");
+
+    final response = await http.get(url);
+    print("길 안내 결과 받아옴");
+    writeContext(response.body); // 받아온 결과를 파일로 저장
+  }
+
+  // 파일 입출력을 위한 메소드들
+  Future<String> get _localPath async {
+    final directory = await getApplicationDocumentsDirectory();
+    return directory.path;
+  }
+  Future<File> get _localFile async {
+    final path = await _localPath;
+    return File('$path/response.txt');
+  }
+  Future<File> writeContext(context) async {
+    final file = await _localFile;
+    return file.writeAsString('$context');
   }
 }
