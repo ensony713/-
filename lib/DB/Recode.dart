@@ -51,6 +51,7 @@ Future<Database> createTable() async {
 }
 
 /// 기록이 아예 없을 때 새로 데이터를 넣기 위한 메소드
+/// 매개변수로 recode 객체 필요
 Future<void> insertDB(Recode recode) async {
   // DB reference 얻어옴
   final Database db = await createTable();
@@ -84,24 +85,37 @@ Future<List<Recode>> getRecode() async {
 }
 
 /// date를 key로 데이터 가져오기
+/// 만약 date를 key로 갖는 데이터가 없다면, 새로 생성하고 초기값을 가져옴.
 Future<Recode> getDateRecode(String date) async {
   // DB reference 얻어옴
   final Database db = await createTable();
 
-  // date의 Recode를 얻기 위해 테이블에 질의
-  final List<Map<String, dynamic>> maps = await db.query(
+  try {
+    // date의 Recode를 얻기 위해 테이블에 질의
+    final List<Map<String, dynamic>> maps = await db.query(
       'recode',
       where: 'date = ?',
       whereArgs: [date],
-  );
-
-  return Recode(
-    date: maps[0]['date'],
-    length: maps[0]['length'],
-    time: maps[0]['time'],
-    content: maps[0]['content'],
-    count: maps[0]['count'],
     );
+
+    return Recode(
+      date: maps[0]['date'],
+      length: maps[0]['length'],
+      time: maps[0]['time'],
+      content: maps[0]['content'],
+      count: maps[0]['count'],
+    );
+  } catch (ex) {
+    Recode re = Recode(
+        date: date,
+        length: 0,
+        time: 0,
+        content: 'non',
+        count: 0
+    );
+    insertDB(re);
+    return re;
+  }
 }
 
 /// date를 key로 전체 데이터 업데이트
@@ -119,25 +133,33 @@ Future<void> updateDB(Recode recode) async {
 }
 
 /// date를 key로 length만 업데이트. count는 자동으로 업데이트 되도록 구성됨
-Future<void> updateLength(Recode recode, String date, int length) async {
+/// ***주의*** 총 합계를 저장해야 합니다.
+/// 완료 버튼 선택 때 측정한 거리 아니고 총 산책 거리를 저장해야 돼요!
+Future<void> updateLength(String date, int length) async {
   // DB reference 얻어옴
   final Database db = await createTable();
 
   Recode recode = await getDateRecode(date);
+  recode.length = length;
+  recode.count = recode.count + 1;
 
   // 주어진 Recode를 수정함
   await db.update(
     'recode',
-    {'length' : length, 'count' : recode.count + 1},
+    recode.toMap(),
     where: 'date = ?',
     whereArgs: [date]
   );
 }
 
 /// date를 key로 time만 업데이트. count는 자동으로 업데이트 되도록 구성됨
-Future<void> updateTime(Recode recode, String date, int time) async {
+/// ***주의*** 총 합계를 저장해야 합니다.
+/// 완료 버튼 선택 때 측정한 시간 아니고 총 산책 시간을 저장해야 돼요!
+Future<void> updateTime(String date, int time) async {
   // DB reference 얻어옴
   final Database db = await createTable();
+
+  Recode recode = await getDateRecode(date);
 
   // 주어진 Recode를 수정함
   await db.update(

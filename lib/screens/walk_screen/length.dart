@@ -128,12 +128,12 @@ class _LengthState extends State<Length> {
                   myLocationButtonEnabled: false,
                   markers: _markers.toSet(),
                   polylines: Set<Polyline>.of(_polylines.values),
-                  onTap: (chosen) async { // 왜 탭하면 밀릴까.... 왜 이전에 터치한 지점이 마커로 뜰까......
+                  onTap: (chosen) { // 왜 화면을 움직이기 전에는 마커가 안 뜨지..
                     if(!_isWalking) { // 산책 중이 아닐 때만 탭한 위치에 마커 추가
-                      _addDestination(chosen, 'destination');
-                    } // 산책 중일 땐 지도에 들어오는 터치 무시
+                      _addDestination(chosen);
+                    }
+                    // 산책 중일 땐 지도에 들어오는 터치 무시
                   },
-                  //zoomControlsEnabled: false,
                 ),
               ),
               Row(children: [
@@ -154,6 +154,7 @@ class _LengthState extends State<Length> {
                       // 지도에서 목적지 마커 삭제
                       setState((){
                         _markers.remove(_destinationPoint);
+                        _isWalking = false;
                       });
 
                       // _startPoint랑 _destinationPoint 초기화
@@ -167,10 +168,6 @@ class _LengthState extends State<Length> {
                       _track = []; // 이동 경로 초기화
                       _polylines = <PolylineId, Polyline>{};
 
-                      setState(() { // 산책 상태 갱신
-                        _isWalking = false;
-                      });
-
                     } else { // 산책 중이 아닐 때
 
                       if (_destinationPoint.markerId != const MarkerId('non')) {
@@ -179,9 +176,6 @@ class _LengthState extends State<Length> {
                           position: _currentPosition,
                         );
                         _track.add(_startPoint.position);
-
-                        // 목적지까지 길안내 시작
-                        _navigation();
 
                         // 이동한 경로를 기록해 지도에 띄우기 시작
                         Polyline line = Polyline(polylineId: const PolylineId(
@@ -295,9 +289,6 @@ class _LengthState extends State<Length> {
             _walkingLength = 0;
           }
         }
-
-        _markers.remove(_currentMarker);
-
         _currentPosition = LatLng(position.latitude, position.longitude);
         _currentMarker = Marker(
             markerId: const MarkerId("now"),
@@ -313,12 +304,8 @@ class _LengthState extends State<Length> {
   }
 
   // 목적지 마커를 추가하는 메소드
-  void _addDestination(var point, String name) {
-    if (_destinationPoint.markerId != const MarkerId('non')) {
-      _markers.remove(_destinationPoint);
-    }
-
-    _destinationPoint = Marker(markerId: MarkerId(name),
+  void _addDestination(var point) {
+    _destinationPoint = Marker(markerId: const MarkerId('destination'),
       position: point,
     );
 
@@ -326,8 +313,8 @@ class _LengthState extends State<Length> {
         point.latitude, point.longitude);
 
     setState((){
-      _walkingLength = dLength.toInt();
       _markers.add(_destinationPoint);
+      _walkingLength = dLength.toInt();
     });
   }
 
@@ -393,30 +380,9 @@ class _LengthState extends State<Length> {
     double lat = jsonDecode(response.body)['candidates'][0]['geometry']['location']['lat'];
     double lng = jsonDecode(response.body)['candidates'][0]['geometry']['location']['lng'];
 
-    _addDestination(LatLng(lat, lng), value);
+    _addDestination(LatLng(lat, lng));
 
     print('목적지 갱신');
-  }
-
-  // 길 찾기 메소드
-  void _navigation() async {
-    if (_destinationPoint.markerId == const MarkerId('non') || _startPoint.markerId == const MarkerId('non')) {
-      print('지점 설정 없이 길찾기가 호출됨');
-      _isWalking = false;
-      return;
-    }
-
-    /*
-    final url = Uri.parse("https://maps.googleapis.com/maps/api/directions/json"
-        "?origin=${_currentPosition.latitude},${_currentPosition.longitude}" // 출발점
-        "&destination=${_destinationPoint.position.latitude},${_destinationPoint.position.longitude}" // 도착점
-        "&mode=walking" // 어떤 방식의 길안내인지
-        "&language=ko" // 반환값의 언어
-        "&key=AIzaSyCxnMmwLCN6PlyGaqXd8Z7BTqCbVQ35bXk");
-
-    final response = await http.get(url);
-    print("길 안내 결과 받아옴");
-    writeContext(response.body); // 받아온 결과를 파일로 저장*/
   }
 
   // 파일 입출력을 위한 메소드들

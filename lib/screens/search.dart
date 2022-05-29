@@ -506,7 +506,7 @@ class _ThirdState extends State<third> {
   }
 
   /// 미용실 button event handler
-  void _chooseSalon() async{
+  Future<void> _chooseSalon() async {
 
     setViewInit();
     _onSalonTab = true;
@@ -547,7 +547,7 @@ class _ThirdState extends State<third> {
   }
 
   /// 병원 button event handler
-  void _chooseHospital() async{
+  Future<void> _chooseHospital() async{
 
     setViewInit();
     _onHospitalTab = true;
@@ -588,7 +588,7 @@ class _ThirdState extends State<third> {
   }
 
   /// 숙박시설 button event handler
-  void _chooseHotel() async{
+  Future<void> _chooseHotel() async{
 
     setViewInit();
     _onHotelTab = true;
@@ -628,7 +628,7 @@ class _ThirdState extends State<third> {
   }
 
   /// 공원 button event handler
-  void _choosePark() async{
+  Future<void> _choosePark() async{
 
     setViewInit();
     _onPakrTab = true;
@@ -668,7 +668,7 @@ class _ThirdState extends State<third> {
   }
 
   /// 반려동물 용품점 button event handler
-  void _choosePets() async {
+  Future<void> _choosePets() async {
 
     setViewInit();
     _onPetTab = true;
