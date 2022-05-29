@@ -8,6 +8,7 @@ class Recode {
   String content = "";
   int count = 0;
 
+  /// 값이 없어도 넣어야 합니다. 없으면 0이나 '' 등으로 넣어 주세요
   Recode({required this.date, required this.length,
     required this.time, required this.content, required this.count});
 
@@ -28,6 +29,7 @@ class Recode {
   }
 }
 
+/// 테이블을 생성하는 메소드
 Future<Database> createTable() async {
   final Future<Database> database = openDatabase(
     // 데이터베이스 경로를 지정
@@ -48,6 +50,7 @@ Future<Database> createTable() async {
   return database;
 }
 
+/// 기록이 아예 없을 때 새로 데이터를 넣기 위한 메소드
 Future<void> insertDB(Recode recode) async {
   // DB reference 얻어옴
   final Database db = await createTable();
@@ -61,6 +64,7 @@ Future<void> insertDB(Recode recode) async {
   );
 }
 
+/// 전체 테이블을 받아오는 메소드
 Future<List<Recode>> getRecode() async {
   // DB reference 얻어옴
   final Database db = await createTable();
@@ -79,6 +83,7 @@ Future<List<Recode>> getRecode() async {
   });
 }
 
+/// date를 key로 데이터 가져오기
 Future<Recode> getDateRecode(String date) async {
   // DB reference 얻어옴
   final Database db = await createTable();
@@ -99,6 +104,7 @@ Future<Recode> getDateRecode(String date) async {
     );
 }
 
+/// date를 key로 전체 데이터 업데이트
 Future<void> updateDB(Recode recode) async {
   // DB reference 얻어옴
   final Database db = await createTable();
@@ -112,6 +118,7 @@ Future<void> updateDB(Recode recode) async {
   );
 }
 
+/// date를 key로 length만 업데이트. count는 자동으로 업데이트 되도록 구성됨
 Future<void> updateLength(Recode recode, String date, int length) async {
   // DB reference 얻어옴
   final Database db = await createTable();
@@ -127,6 +134,7 @@ Future<void> updateLength(Recode recode, String date, int length) async {
   );
 }
 
+/// date를 key로 time만 업데이트. count는 자동으로 업데이트 되도록 구성됨
 Future<void> updateTime(Recode recode, String date, int time) async {
   // DB reference 얻어옴
   final Database db = await createTable();
@@ -140,6 +148,7 @@ Future<void> updateTime(Recode recode, String date, int time) async {
   );
 }
 
+/// date를 key로 데이터 삭제, date인 데이터가 전부 삭제됨
 Future<void> deleteDB(String date) async {
   // DB reference 얻어옴
   final Database db = await createTable();
