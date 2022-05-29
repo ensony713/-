@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:walking_googlemap/screens/diary.dart';
+import 'package:walking_googlemap/DB/Recode.dart';
 
 class Length extends StatefulWidget {
   const Length({Key? key}) : super(key: key);
@@ -37,8 +38,8 @@ class _LengthState extends State<Length> {
   List<LatLng> _track = []; // 이동 경로를 저장할 배열
   Map<PolylineId, Polyline> _polylines = <PolylineId, Polyline>{ };
 
-  double _lenght = 0; // 오늘 산책한 총 이동 거리
-  double _walkingLength = 0; // 목적지까지 남은 잔여 거리
+  int _length = 0; // 오늘 산책한 총 이동 거리
+  int _walkingLength = 0; // 목적지까지 남은 잔여 거리
   String today = ""; // DB date
 
   bool _isWalking = false; // 산책 중인지 아닌지, 산책 중이면 true.
@@ -137,18 +138,18 @@ class _LengthState extends State<Length> {
               ),
               Row(children: [
                 Column( children:[ // 산책 거리를 보여줄 위젯
-                  Text('총 산책 거리 ${_lenght}m'),
+                  Text('총 산책 거리 ${_length}m'),
                   Text('목적지까지의 거리 ${_walkingLength}m'),
                 ]),
                 SizedBox(width: deviceWidth * 0.2,),
                 TextButton( // 길 안내 시작 / 산책 완료 버튼 위젯
                   onPressed: () {
                     if (_isWalking) { // 산책 중일 때
-                      print("산책 완료 버튼 선택됨");
+
                       // 목적지까지의 거리 0으로 초기화
                       _walkingLength = 0;
 
-                      // db에 총 산책 거리 갱신 -> 일기 페이지에 전달하는 편이..
+                      // db에 총 산책 거리 갱신 -> 일기 페이지에 전달하는 편이..?
 
                       // 지도에서 목적지 마커 삭제
                       setState((){
@@ -165,29 +166,42 @@ class _LengthState extends State<Length> {
 
                       _track = []; // 이동 경로 초기화
                       _polylines = <PolylineId, Polyline>{};
+
+                      setState(() { // 산책 상태 갱신
+                        _isWalking = false;
+                      });
+
                     } else { // 산책 중이 아닐 때
-                      print("길 안내 시작 버튼 선택됨");
-                      // 시작지점 저장
-                      _startPoint = Marker(markerId: const MarkerId("start"),
-                        position: _currentPosition,
-                      );
-                      // 목적지까지 길안내 시작
-                      _navigation();
 
-                      // 이동한 경로를 기록해 지도에 띄우기 시작
-                      Polyline line = Polyline(polylineId: const PolylineId('walking tracker'),
-                        color: Colors.green,
-                        points: _track,
-                        width: 7,
-                      );
-                      _polylines[const PolylineId('track')] = line;
+                      if (_destinationPoint.markerId != const MarkerId('non')) {
+                        // 시작지점 저장
+                        _startPoint = Marker(markerId: const MarkerId("start"),
+                          position: _currentPosition,
+                        );
+                        _track.add(_startPoint.position);
+
+                        // 목적지까지 길안내 시작
+                        _navigation();
+
+                        // 이동한 경로를 기록해 지도에 띄우기 시작
+                        Polyline line = Polyline(polylineId: const PolylineId(
+                            'walking tracker'),
+                          color: Colors.green,
+                          points: _track,
+                          width: 7,
+                        );
+                        _polylines[const PolylineId('track')] = line;
+
+                        setState(() { // 산책 상태 갱신
+                          _isWalking = true;
+                        });
+                      } else {
+                        // 목적지를 선택해달라는 알림 창을 띄움
+                        _plzChooseDestination(context);
+                      }
                     }
-
-                    setState(() { // 산책 상태 갱신
-                      _isWalking = !_isWalking;
-                    });
                   },
-                  child: _isWalking ? const Text("산책 완료") : const Text("길 안내 시작"),
+                  child: _isWalking ? const Text("산책 완료") : const Text("산책 시작"),
                   style: TextButton.styleFrom(
                     textStyle: TextStyle(fontSize: deviceArea * 0.00005),
                     primary: Colors.black,
@@ -236,9 +250,8 @@ class _LengthState extends State<Length> {
       lon = double.parse(position.longitude.toString());
       _currentPosition = LatLng(lat, lon);
 
-      _kGooglePlex = CameraPosition(target: _currentPosition, zoom: 14.0);
+      _mapController.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition, 14));
       // 현재 위치로 카메라 설정
-      // initState에서 호출되는 메소드라 상태를 갱신해야되는 animationCamara 사용 불가능
 
       _currentMarker = Marker(markerId: const MarkerId("now"),
         position: _currentPosition,
@@ -264,18 +277,20 @@ class _LengthState extends State<Length> {
 
       if (position != null) {
         if (_isWalking) { // 산책 중이면
+
+          // 산책 거리 증가
+          _length += Geolocator.distanceBetween(_track.last.latitude, _track.last.longitude,
+              _currentPosition.latitude, _currentPosition.longitude).toInt();
+
           // 이전 위치들을 이동 경로 배열에 저장
           _track.add(_currentMarker.position);
           // 실시간 위치를 저장해서 지도에 그려줘야
-
-          // 총 산책 거리 증가
-          _lenght += 5;
 
           if (_destinationPoint.markerId != const MarkerId('non')) { // 목적지 마커가 초기 상태가 아니면
             _walkingLength = Geolocator.distanceBetween( // 목적지까지의 거리 계산 => 근데 이거 직선 경로일텐데...?
                 _currentPosition.latitude, _currentPosition.longitude,
                 _destinationPoint.position.latitude,
-                _destinationPoint.position.longitude);
+                _destinationPoint.position.longitude).toInt();
           } else {
             _walkingLength = 0;
           }
@@ -311,9 +326,27 @@ class _LengthState extends State<Length> {
         point.latitude, point.longitude);
 
     setState((){
-      _walkingLength = double.parse(dLength.toStringAsFixed(2));
+      _walkingLength = dLength.toInt();
       _markers.add(_destinationPoint);
     });
+  }
+
+  // 목적지를 선택하지 않고 산책 버튼을 눌렀을 때 안내창을 띄우기 위한 메소드
+  void _plzChooseDestination(BuildContext context) {
+    showDialog(context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: const Text("목적지를 선택해주세요!"),
+            actions: [
+              TextButton(onPressed: (){
+                Navigator.of(context).pop();
+              },
+                  child: const Text("확인"))
+            ],
+          );
+        }
+    );
   }
 
   // 일기 작성을 질의하는 창을 띄우는 메소드
@@ -369,9 +402,11 @@ class _LengthState extends State<Length> {
   void _navigation() async {
     if (_destinationPoint.markerId == const MarkerId('non') || _startPoint.markerId == const MarkerId('non')) {
       print('지점 설정 없이 길찾기가 호출됨');
+      _isWalking = false;
       return;
     }
 
+    /*
     final url = Uri.parse("https://maps.googleapis.com/maps/api/directions/json"
         "?origin=${_currentPosition.latitude},${_currentPosition.longitude}" // 출발점
         "&destination=${_destinationPoint.position.latitude},${_destinationPoint.position.longitude}" // 도착점
@@ -381,7 +416,7 @@ class _LengthState extends State<Length> {
 
     final response = await http.get(url);
     print("길 안내 결과 받아옴");
-    writeContext(response.body); // 받아온 결과를 파일로 저장
+    writeContext(response.body); // 받아온 결과를 파일로 저장*/
   }
 
   // 파일 입출력을 위한 메소드들

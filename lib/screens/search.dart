@@ -25,18 +25,21 @@ class _ThirdState extends State<third> {
   late String _now; // 현재 위치 - 한글로 시, 동
   bool _setPosition = false; // 현재 위치가 찾아져 있으면 true
   final List<Marker> _markers = []; // 지도에 띄울 마커 list
-  late BitmapDescriptor _markerIcon; // 현재 위치 마커 아이콘 객체
+  late final BitmapDescriptor _markerIcon; // 현재 위치 마커 아이콘 객체
+  late final BitmapDescriptor _naviIcon;
 
   double _minPoint = 2000.0; // 가장 가까운 거리
-  late LatLng _rcPoint; // 가장 가까운 시설 위치
   String recommend = "가장 가까운 시설";
   String facilityName = "이름"; // 선택한 시설 이름
   String facilityAddr = "주소"; // 선택한 시설 주소
   String facilityWidth = "123m"; // 현재 위치에서 선택한 시설까지의 거리
   String category = ''; // 선택한 카테고리
   late LatLng point; // 선택된 지점
-  Map<PolylineId, Polyline> _polylines = <PolylineId, Polyline> {};
 
+  Map<PolylineId, Polyline> _polylines = <PolylineId, Polyline> {};
+  List<LatLng> _navigationPoint = [];
+
+  bool _isNaviWork = false; // 길안내가 떠있는 중이면 true
   bool _isNear = false; // 선택된 마커가 가장 가까운 지점이면 true
   bool _onMarkerTab = false; // 마커가 선택된 상태면 true
   bool _onSalonTab = false;
@@ -44,6 +47,29 @@ class _ThirdState extends State<third> {
   bool _onHotelTab = false;
   bool _onPetTab = false;
   bool _onHospitalTab = false;
+
+  void setViewInit() {
+    _polylines = <PolylineId, Polyline> {};
+    _navigationPoint = [];
+    _markers.clear();
+
+    _isNaviWork = false;
+    _isNear = false;
+    _onMarkerTab = false;
+    _onSalonTab = false;
+    _onPakrTab = false;
+    _onHotelTab = false;
+    _onPetTab = false;
+    _onHospitalTab = false;
+
+    _minPoint = 2000.0;
+    point = const LatLng(0, 0);
+    recommend = "가장 가까운 시설";
+    facilityName = "이름";
+    facilityAddr = "주소";
+    facilityWidth = "123m";
+    category = '';
+  }
 
   @override
   void initState() {
@@ -60,7 +86,12 @@ class _ThirdState extends State<third> {
   void setIcon() async {
     _markerIcon = await BitmapDescriptor.fromAssetImage(
         const ImageConfiguration(devicePixelRatio: 2.5),
-        'images/icons/putprint_pin.png');
+        'images/icons/putprint_pin.png'
+    );
+    _naviIcon = await BitmapDescriptor.fromAssetImage(
+      const ImageConfiguration(devicePixelRatio: 1),
+      'images/icons/wayPoint.png'
+    );
   }
 
   @override
@@ -196,10 +227,14 @@ class _ThirdState extends State<third> {
                     });
                   },
                   markers: _markers.toSet(),
+                  polylines: Set<Polyline>.of(_polylines.values),
                   mapType: MapType.normal,
                   initialCameraPosition: _kGooglePlex,
                   onCameraMove: (_) {},
                   myLocationButtonEnabled: true,
+                  onTap: (chosen){
+                    _controller.animateCamera(CameraUpdate.newLatLng(chosen));
+                  },
                 ),
               ),
               SizedBox(
@@ -212,20 +247,20 @@ class _ThirdState extends State<third> {
                         children: [
                           SizedBox(width: deviceWidth * 0.01,),
                           Text(facilityName,
-                            style: TextStyle(fontSize: deviceArea * 0.00007,
+                            style: TextStyle(fontSize: deviceArea * 0.00005,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           SizedBox(width: deviceWidth * 0.02,),
                           Text(category,
-                            style: TextStyle(fontSize: deviceArea * 0.000045,
+                            style: TextStyle(fontSize: deviceArea * 0.000035,
                               color: Colors.black45,
                             ),
                           ),
                           SizedBox(width: deviceWidth * 0.06,),
                           _isNear ? Text(recommend,
                             style: TextStyle(
-                              fontSize: deviceArea * 0.000045,
+                              fontSize: deviceArea * 0.00004,
                               fontWeight: FontWeight.bold,
                               color: Colors.redAccent,
                             )
@@ -241,13 +276,27 @@ class _ThirdState extends State<third> {
                       Text(facilityAddr,
                         style: const TextStyle(color: Colors.black54),
                       ),
-                      TextButton(onPressed: () {
-                        print('길 안내 버튼이 클릭됐어요.');
-                        print('$facilityName까지의 길안내를 출력합니다.');
-                        print('$_currentPosition부터 $point까지');
-                        // 길 안내 google Directions API 이용
-                        _navigation();
-                        },
+                      _isNaviWork ? const SizedBox() : TextButton(onPressed: () {
+                        if(!_isNaviWork) {
+                          _isNaviWork = true;
+
+                          print('길 안내 버튼이 클릭됐어요.');
+                          print('$facilityName까지의 길안내를 출력합니다.');
+
+                          _navigationPoint.add(_currentPosition);
+                          // 길 안내 google Directions API 이용
+                          _navigation();
+
+                          Polyline line = Polyline(
+                              polylineId: const PolylineId('navigation'),
+                              color: Colors.blue,
+                              points: _navigationPoint,
+                              width: 4);
+
+                          setState(() {
+                            _polylines[const PolylineId('navigation')] = line;
+                          });
+                        }},
                         child: const Text('길 안내'),
                         style: TextButton.styleFrom(
                           textStyle: TextStyle(fontSize: deviceArea * 0.00004),
@@ -309,6 +358,7 @@ class _ThirdState extends State<third> {
       lat = double.parse(position.latitude.toString());
       lon = double.parse(position.longitude.toString());
       _currentPosition = LatLng(lat, lon);
+      _controller.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition, 14));
     }
   }
 
@@ -326,7 +376,6 @@ class _ThirdState extends State<third> {
     if (distance < 2000) { // 현재 위치 반경 약 1.5km 이내의 시설을 필터링하기 위한 부분
       if (_minPoint > distance) {
         _minPoint = distance;
-        _rcPoint = p;
         id = "recommend";
         // 약 20개의 검색 결과가 반환되는데, 가장 가까운 지점이 가장 먼저 들어오는 양상을 보임
 
@@ -413,27 +462,54 @@ class _ThirdState extends State<third> {
     print("길 안내 결과 받아옴");
     //writeContext(response.body); // 받아온 결과를 파일로 저장
 
-    //String path = jsonDecode(response.body)['routes'][0]['legs'][0];
-    print(jsonDecode(response.body)['routes'][0]['legs'][0]['steps'][0]['start_location']);
-    print(jsonDecode(response.body)['routes'][0]['legs'][0]['steps'][0]['end_location']);
-
+    Map<String, dynamic> map = jsonDecode(response.body);
+    catchPoint(map);
   }
 
-  void viewRoutes() {
+  // json에서 내용을 가져오기 위한 메소드
+  void catchPoint(Map<String, dynamic> map) {
 
+    // 반환받는 json의 구조가, steps list가 오는데, 이동 방식이 달라질 때마다 steps의 index가 바뀜
+    dynamic tmp;
+    double lat = 0, long = 0;
+    bool isTransit = false;
+
+    for(int i = 0; i < 50; i++) {
+      try {
+        tmp = map['routes'][0]['legs'][0]['steps'][i];
+
+        while (true) {
+          isTransit = tmp['travel_mode'] == 'WALKING' ? false : true;
+          lat = tmp['end_location']['lat'];
+          long = tmp['end_location']['lng'];
+
+          _navigationPoint.add(LatLng(lat, long));
+          setState((){
+            _markers.add(
+                Marker(
+                  markerId: isTransit ? MarkerId('transit' + i.toString()) : MarkerId('walking' + i.toString()),
+                  position: LatLng(lat, long),
+                  infoWindow: InfoWindow(title: isTransit ? '여기까지 대중교통으로' : '여기까지 도보로'),
+                  icon: _naviIcon,)
+            );
+          });
+          try {
+            tmp = tmp['steps'][0];
+          } catch (ex) {
+            break;
+          }
+        }
+      } catch (ex) {
+        break;
+      }
+    }
   }
 
   /// 미용실 button event handler
   void _chooseSalon() async{
 
+    setViewInit();
     _onSalonTab = true;
-    _onPakrTab = false;
-    _onHotelTab = false;
-    _onPetTab = false;
-    _onHospitalTab = false;
-
-    _onMarkerTab = false;
-    _markers.clear();
     _markers.add(_currentMark);
 
     category = "미용";
@@ -473,14 +549,8 @@ class _ThirdState extends State<third> {
   /// 병원 button event handler
   void _chooseHospital() async{
 
-    _onSalonTab = false;
-    _onPakrTab = false;
-    _onHotelTab = false;
-    _onPetTab = false;
+    setViewInit();
     _onHospitalTab = true;
-
-    _onMarkerTab = false;
-    _markers.clear();
     _markers.add(_currentMark);
 
     category = "동물병원";
@@ -520,14 +590,8 @@ class _ThirdState extends State<third> {
   /// 숙박시설 button event handler
   void _chooseHotel() async{
 
-    _onSalonTab = false;
-    _onPakrTab = false;
+    setViewInit();
     _onHotelTab = true;
-    _onPetTab = false;
-    _onHospitalTab = false;
-
-    _onMarkerTab = false;
-    _markers.clear();
     _markers.add(_currentMark);
 
     category = "반려동물 호텔";
@@ -566,14 +630,8 @@ class _ThirdState extends State<third> {
   /// 공원 button event handler
   void _choosePark() async{
 
-    _onSalonTab = false;
+    setViewInit();
     _onPakrTab = true;
-    _onHotelTab = false;
-    _onPetTab = false;
-    _onHospitalTab = false;
-
-    _onMarkerTab = false;
-    _markers.clear();
     _markers.add(_currentMark);
 
     category = "공원";
@@ -612,14 +670,8 @@ class _ThirdState extends State<third> {
   /// 반려동물 용품점 button event handler
   void _choosePets() async {
 
-    _onSalonTab = false;
-    _onPakrTab = false;
-    _onHotelTab = false;
+    setViewInit();
     _onPetTab = true;
-    _onHospitalTab = false;
-
-    _onMarkerTab = false;
-    _markers.clear();
     _markers.add(_currentMark);
 
     category = "용품점";
