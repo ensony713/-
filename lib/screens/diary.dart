@@ -1,42 +1,48 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:walking_googlemap/DB/Recode.dart';
+import 'package:table_calendar/table_calendar.dart';
 
-class Second extends StatefulWidget {
+class Diary extends StatefulWidget {
   @override
-  _SecondState createState() => _SecondState();
+  _DiaryState createState() => _DiaryState();
+
 }
 
-class _SecondState extends State<Second> {
+class _DiaryState extends State<Diary> {
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        body: Center(
-          child: Column(
-            children: [
-              const Text('Diary'),
-              TextButton(
-                  onPressed: pressButton,
-                  child: const Text('DB test Button')
-              ),
-            ],
+    return MaterialApp(
+      theme: ThemeData(
+        primaryColor: Colors.white,
+      ),
+      home: DefaultTabController(
+        length: 1,
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          appBar: AppBar(
+            bottom: const TabBar(
+              tabs: [
+                Tab(text: '일기'),
+              ],
+              labelStyle: TextStyle(fontSize: 15),
+              isScrollable: false,
+              indicatorColor: Colors.lightGreen,
+              indicatorWeight: 20,
+            ),
+            title: const Text(' '),
+            backgroundColor: Colors.white,
           ),
-        )
+          body: SafeArea(
+            child: TableCalendar(
+              firstDay: DateTime.utc(2010, 1, 1),
+              lastDay: DateTime.utc(2040, 1, 31),
+              focusedDay: DateTime.now(),
+            ),
+          )
+        ),
+      ),
     );
   }
-
-  Future<void> pressButton() async {
-    createTable();
-
-    Recode may29 = await getDateRecode('2022/05/29');
-    print('date를 기준으로 하나만 가져오기: ' + may29.toString());
-
-    print('수정');
-    await updateLength('2022/05/29', 777);
-    await updateTime('2022/05/29', 123);
-
-    List<Recode> recode = await getRecode();
-    for(Recode r in recode) {
-      print(r);
-    }
-  }
 }
+
