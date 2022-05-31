@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:walking_test/screens/diary.dart';
 import 'package:walking_test/DB/Recode.dart';
+import 'package:walking_test/class/LocationManager.dart';
 
 class Length extends StatefulWidget {
   const Length({Key? key}) : super(key: key);
@@ -30,11 +31,12 @@ class _LengthState extends State<Length> {
     zoom: 10.0,
   );
 
-  LatLng _currentPosition = const LatLng(37.011289, 127.265021); // 현재 위치
+  LocationManager lm = LocationManager();
+
   final List<Marker> _markers = []; // 마커 배열
   late BitmapDescriptor _markerIcon; // 현재 위치를 나타낼 아이콘
   late Marker _currentMarker; // 현재 위치 마커
-  late Marker _startPoint; // 시작지점 마커
+  late Marker startPoint; // 시작지점 마커
   late Marker _destinationPoint = const Marker(markerId: MarkerId("non")); // 목적지 마커
 
   List<LatLng> _track = []; // 이동 경로를 저장할 배열
@@ -43,19 +45,19 @@ class _LengthState extends State<Length> {
   int _length = 0; // 오늘 산책한 총 이동 거리
   int _startLength = 0; // 산책 시작했을 때 이동 거리
   int _walkingLength = 0; // 목적지까지 남은 잔여 거리
-  String today = ""; // DB date
+  String date = ""; // DB date
   String day = '';
 
   bool _isWalking = false; // 산책 중인지 아닌지, 산책 중이면 true.
 
-  String getToday() {
+  String getDate() {
     DateTime now = DateTime.now();
     DateFormat format = DateFormat('yyyy/MM/dd');
-    today = format.format(now);
+    date = format.format(now);
 
-    DateFormat todayFormat = DateFormat('yyyy년 MM월 dd일');
-    day = todayFormat.format(now);
-    return today;
+    DateFormat dateFormat = DateFormat('yyyy년 MM월 dd일');
+    day = dateFormat.format(now);
+    return date;
   }
 
   void setIcon() async {
@@ -65,7 +67,7 @@ class _LengthState extends State<Length> {
   }
 
   void getDB() async {
-    Recode recode = await getDateRecode(today);
+    Recode recode = await getDateRecode(date);
     _length = recode.length;
   }
 
@@ -74,7 +76,7 @@ class _LengthState extends State<Length> {
     super.initState();
     _destinationController = TextEditingController();
     _diaryController = TextEditingController();
-    getToday(); // 오늘 날짜를 받아올 메소드, 이후 저장 전 등에 다시 호출되어야.
+    getDate(); // 오늘 날짜를 받아올 메소드, 이후 저장 전 등에 다시 호출되어야.
     setIcon(); // 현재 위치 아이콘 지정 메소드
     getLocation(); // 일회적으로 위치를 받아오는 메소드, 첫 실행 시 한 번만 수행할 예정
     asyncGetLocation(); // 실시간 위치 정보 갱신 메소드
@@ -134,7 +136,7 @@ class _LengthState extends State<Length> {
                       _mapController = controller;
                     });
                     _currentMarker = Marker(markerId: const MarkerId("now"),
-                        position: _currentPosition,
+                        position: lm.now,
                         icon: _markerIcon,
                     );
                   },
@@ -167,7 +169,7 @@ class _LengthState extends State<Length> {
 
                       if (_length - _startLength != 0) {
                         // 산책 완료를 눌렀을 때 이동한 거리가 0m가 아니라면, DB에 저장
-                        await updateLength(today, _length);
+                        await updateLength(date, _length);
 
                         // 일기를 쓸지 질의하는 창 띄우기
                         _askMakeDiary(context);
@@ -179,8 +181,8 @@ class _LengthState extends State<Length> {
                         _isWalking = false;
                       });
 
-                      // _startPoint랑 _destinationPoint 초기화
-                      _startPoint = const Marker(markerId: MarkerId("non"));
+                      // startPoint랑 _destinationPoint 초기화
+                      startPoint = const Marker(markerId: MarkerId("non"));
                       _destinationPoint = const Marker(markerId: MarkerId("non"));
 
                       _track = []; // 이동 경로 초기화
@@ -193,10 +195,10 @@ class _LengthState extends State<Length> {
 
                       if (_destinationPoint.markerId != const MarkerId('non')) {
                         // 시작지점 저장
-                        _startPoint = Marker(markerId: const MarkerId("start"),
-                          position: _currentPosition,
+                        startPoint = Marker(markerId: const MarkerId("start"),
+                          position: lm.now,
                         );
-                        _track.add(_startPoint.position);
+                        _track.add(startPoint.position);
 
                         // 이동한 경로를 기록해 지도에 띄우기 시작
                         Polyline line = Polyline(polylineId: const PolylineId(
@@ -263,13 +265,13 @@ class _LengthState extends State<Length> {
 
       lat = double.parse(position.latitude.toString());
       lon = double.parse(position.longitude.toString());
-      _currentPosition = LatLng(lat, lon);
+      lm.now = LatLng(lat, lon);
 
-      _mapController.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition, 14));
+      _mapController.animateCamera(CameraUpdate.newLatLngZoom(lm.now, 14));
       // 현재 위치로 카메라 설정
 
       _currentMarker = Marker(markerId: const MarkerId("now"),
-        position: _currentPosition,
+        position: lm.now,
         icon: _markerIcon,
       );
 
@@ -295,7 +297,7 @@ class _LengthState extends State<Length> {
 
           // 산책 거리 증가
           _length += Geolocator.distanceBetween(_track.last.latitude, _track.last.longitude,
-              _currentPosition.latitude, _currentPosition.longitude).toInt();
+              lm.now.latitude, lm.now.longitude).toInt();
 
           // 이전 위치들을 이동 경로 배열에 저장
           _track.add(_currentMarker.position);
@@ -303,22 +305,22 @@ class _LengthState extends State<Length> {
 
           if (_destinationPoint.markerId != const MarkerId('non')) { // 목적지 마커가 초기 상태가 아니면
             _walkingLength = Geolocator.distanceBetween( // 목적지까지의 거리 계산 => 근데 이거 직선 경로일텐데...?
-                _currentPosition.latitude, _currentPosition.longitude,
+                lm.now.latitude, lm.now.longitude,
                 _destinationPoint.position.latitude,
                 _destinationPoint.position.longitude).toInt();
           } else {
             _walkingLength = 0;
           }
         }
-        _currentPosition = LatLng(position.latitude, position.longitude);
+        lm.now = LatLng(position.latitude, position.longitude);
         _currentMarker = Marker(
             markerId: const MarkerId("now"),
-            position: _currentPosition,
+            position: lm.now,
             icon: _markerIcon);
 
         setState((){
           _markers.add(_currentMarker);
-          _mapController.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition, 14.0));
+          _mapController.animateCamera(CameraUpdate.newLatLngZoom(lm.now, 14.0));
         });
       }
     });
@@ -330,7 +332,7 @@ class _LengthState extends State<Length> {
       position: point,
     );
 
-    var dLength = Geolocator.distanceBetween(_currentPosition.latitude, _currentPosition.longitude,
+    var dLength = Geolocator.distanceBetween(lm.now.latitude, lm.now.longitude,
         point.latitude, point.longitude);
 
     setState((){
@@ -398,7 +400,7 @@ class _LengthState extends State<Length> {
         "?fields=geometry" // 반환 받을 내용
         "&input=$value" // 검색어
         "&inputtype=textquery"
-        "&locationbias=circle%3A2000${_currentPosition.latitude}%2C${_currentPosition.longitude}" // 검색 중심지
+        "&locationbias=circle%3A2000${lm.now.latitude}%2C${lm.now.longitude}" // 검색 중심지
         "&language=ko" // 반환값의 언어
         "&key=AIzaSyCxnMmwLCN6PlyGaqXd8Z7BTqCbVQ35bXk");
 
