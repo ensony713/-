@@ -358,6 +358,14 @@ class _LengthState extends State<Length> {
   }
 
   // 일기 작성을 질의하는 창을 띄우는 메소드
+  /// 산책 완료 버튼에 onPressed: _askMakeDiary 형태로 주면 됩니다.
+  /// 만약에 팝업 창 띄우는 거 말고도 처리가 필요하다면, 
+  /// onPressed: () {
+  ///   구현하실 내용
+  ///   _askMakeDiary(context)
+  /// } -> 이런식으로 사용하시면 됩니다
+  /// 이게 화면 위에 Dairy 클래스를 띄우는거라서 하단 탭바가 안 떠요.. 이건 저도 해결해보고 싶었는데 딱히 방법이 없더라고요
+  /// 돌아오는 건 뒤로가기 버튼으로 돌아올 수 있긴 해요.
   void _askMakeDiary(BuildContext context) {
     showDialog(context: context,
         barrierDismissible: false,

@@ -16,6 +16,7 @@ class _TimeState extends State<Time> {
   var _time = 0;
   var _isPlaying = false;
   List<String> _saveTimes = [];
+
   void dispose() {
     _timer?.cancel();
     super.dispose();
