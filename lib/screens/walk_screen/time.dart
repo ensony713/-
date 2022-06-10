@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-//import 'package:walking_test/main.dart';
+import 'package:walking_test/main.dart';
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:numberpicker/numberpicker.dart';
@@ -106,11 +106,16 @@ class _TimeState extends State<Time> with TickerProviderStateMixin{
                         ),
                       ),
                     ),
-                    NumberPicker.integer(initialValue: hour, minValue:0, maxValue:23, onChanged: (val){
-                      setState(() {
-                        val = hour;
-                      });
-                    })
+                    NumberPicker(
+                      //initialValue: hour,
+                      minValue:0,
+                      maxValue:23,
+                      onChanged: (val){
+                        setState(() {
+                          hour = val;
+                        });
+                      },
+                      value: hour,)
                   ]),
                 ),
                 Column(
@@ -128,12 +133,17 @@ class _TimeState extends State<Time> with TickerProviderStateMixin{
                         ),
                       ),
                     ),
-                    NumberPicker.integer(initialValue: min, minValue:0, maxValue:60
-                        ,listViewWidth: 60.0,onChanged: (val){
-                          setState(() {
-                            val = min;
-                          });
-                        })
+                    NumberPicker(
+                      //initialValue: min
+                      minValue:0,
+                      maxValue:60,
+                      //listViewWidth: 60.0,
+                      onChanged: (val){
+                        setState(() {
+                          min = val;
+                        });
+                      },
+                      value:min,)
                   ],
                 ),
 
@@ -152,11 +162,17 @@ class _TimeState extends State<Time> with TickerProviderStateMixin{
                         ),
                       ),
                     ),
-                    NumberPicker.integer(initialValue: sec, minValue:0, maxValue:60, listViewWidth: 60.0, onChanged: (val){
-                      setState(() {
-                        val = sec;
-                      });
-                    })
+                    NumberPicker(
+                      //initialValue: sec,
+                      minValue:0,
+                      maxValue:60,
+                      //listViewWidth: 60.0,
+                      onChanged: (val){
+                        setState(() {
+                          sec = val;
+                        });
+                      },
+                      value:sec,)
                   ],
                 )
 
@@ -186,7 +202,7 @@ class _TimeState extends State<Time> with TickerProviderStateMixin{
                   ),
                   color: Colors.green,
                   child: Text(
-                    "start",
+                    "산책시작",
                     style: TextStyle(
                       fontSize: 18.0,
                       color: Colors.white,
@@ -205,7 +221,7 @@ class _TimeState extends State<Time> with TickerProviderStateMixin{
                   ),
                   color: Colors.red,
                   child: Text(
-                    "stop",
+                    "산책완료",
                     style: TextStyle(
                       fontSize: 18.0,
                       color: Colors.white,
@@ -304,7 +320,7 @@ class _TimeState extends State<Time> with TickerProviderStateMixin{
                           vertical: 15.0,
                         ),
                         child: Text(
-                          "Stop",
+                          "산책 완료",
                           style: TextStyle(
                             fontSize: 20.0,
                             color: Colors.white,
@@ -336,7 +352,7 @@ class _TimeState extends State<Time> with TickerProviderStateMixin{
                     vertical: 20.0,
                   ),
                     child: Text(
-                      "Start",
+                      "산책 시작",
                       style: TextStyle(
                         fontSize: 24.0,
                         color: Colors.white,
@@ -357,10 +373,7 @@ class _TimeState extends State<Time> with TickerProviderStateMixin{
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          "Time Project",
-        ),
-        centerTitle: true,
+        centerTitle: false,
         bottom: TabBar(
           tabs: <Widget>[
             Text(
@@ -382,8 +395,22 @@ class _TimeState extends State<Time> with TickerProviderStateMixin{
       ),
       body: TabBarView(
         children: <Widget>[
-          timer(),
-          stopwatch(),
+          Stack(
+            children: <Widget> [
+              Image.asset('images/home_bg.jpg'),
+              Positioned.fill(
+                child: timer(),
+              ),
+            ],
+          ),
+          Stack(
+            children: <Widget> [
+              Image.asset('images/home_bg.jpg'),
+              Positioned.fill(
+                child: stopwatch(),
+              ),
+            ],
+          ),
         ],
         controller: tb,
       ),
