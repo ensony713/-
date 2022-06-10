@@ -348,7 +348,7 @@ class _LengthState extends State<Length> {
                   onPressed: (){
                     print("일기 작성 버튼 클릭");
                     Navigator.of(context).pop();
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => Second()));
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => Diary()));
                     },
                   child: const Text("예")),
               TextButton(

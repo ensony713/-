@@ -34,7 +34,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
-  final List<Widget> _children = [Home(), First(), Second(), third()];
+  final List<Widget> _children = [Home(), First(), Diary(), third()];
   // 아이콘 터치 시 각 페이지로 이동하기 위한 페이지 생성자를 써놓는 부분
 
   void _onTap(int index) {

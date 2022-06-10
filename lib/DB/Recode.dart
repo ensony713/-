@@ -86,6 +86,9 @@ Future<List<Recode>> getRecode() async {
 
 /// date를 key로 데이터 가져오기
 /// 만약 date를 key로 갖는 데이터가 없다면, 새로 생성하고 초기값을 가져옴.
+/// yyyy/MM/dd    Recode recode = await getDataRecode('2022/05/30');
+/// recode.time
+/// 반환 Future<Recode>, 없으면 Future<void>
 Future<Recode> getDateRecode(String date) async {
   // DB reference 얻어옴
   final Database db = await createTable();
