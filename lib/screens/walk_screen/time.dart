@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:walking_test/main.dart';
+//import 'package:walking_test/main.dart';
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:numberpicker/numberpicker.dart';
