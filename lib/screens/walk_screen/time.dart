@@ -1,418 +1,141 @@
+
+import 'dart:collection';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:walking_test/main.dart';
-import 'dart:async';
-import 'package:flutter/cupertino.dart';
-import 'package:numberpicker/numberpicker.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:bubble_box/bubble_box.dart';
+import 'dart:collection';
 
-class Time extends StatefulWidget {
+class Diary extends StatefulWidget {
   @override
-  _TimeState createState() => _TimeState();
+  _DiaryState createState() => _DiaryState();
 
 }
 
-class _TimeState extends State<Time> with TickerProviderStateMixin{
-
-  late TabController tb;
-  int hour = 0;
-  int min = 0;
-  int sec = 0;
-  bool started = true;
-  bool stopped = true;
-  int timeForTimer = 0;
-  String timetodisplay = "";
-  bool checktimer = true;
-
-
+class _DiaryState extends State<Diary> {
   @override
-  void initState(){
-    tb = TabController(
-      length: 2,
-
-      vsync: this,
-    );
-    super.initState();
-  }
-
-  void start(){
-    setState(() {
-      started = false;
-      stopped = false;
-    });
-    timeForTimer = ((hour * 60 * 60) + (min * 60) + sec);
-    Timer.periodic(Duration(
-      seconds: 1,
-    ), (Timer t){
-      setState(() {
-        if(timeForTimer < 1 || checktimer == false){
-          t.cancel();
-          if(timeForTimer == 0){
-          }
-          Navigator.pushReplacement(context, MaterialPageRoute(
-            builder: (context) => Time(),
-          ));
-        }
-        else if (timeForTimer < 60) {
-          timetodisplay = timeForTimer.toString();
-          timeForTimer = timeForTimer-1;
-        } else if (timeForTimer < 3600){
-          int m = timeForTimer ~/ 60;
-          int s = timeForTimer - (60*m);
-          timetodisplay = m.toString() + ":" + s.toString();
-          timeForTimer = timeForTimer -1;
-        }else{
-          int h = timeForTimer ~/3600;
-          int t = timeForTimer - (3600 * h);
-          int m = t~/60;
-          int s = t - (60*m);
-          timetodisplay =
-              h.toString() + ":" + m.toString() + ":" + s.toString();
-          timeForTimer = timeForTimer -1;
-        }
-      });
-    });
-  }
-
-  void stop(){
-    setState(() {
-      started = true;
-      stopped = true;
-      checktimer = false;
-    });
-  }
-
-  Widget timer(){
-    return Container(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Expanded(
-            flex: 6,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Column(
-                  mainAxisAlignment:MainAxisAlignment.center,
-                  children: (<Widget>[
-                    Padding(
-                      padding: EdgeInsets.only(
-                        bottom:10.0,
-                      ),
-                      child:Text(
-                        "HH",
-                        style: TextStyle(
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    NumberPicker(
-                      //initialValue: hour,
-                      minValue:0,
-                      maxValue:23,
-                      onChanged: (val){
-                        setState(() {
-                          hour = val;
-                        });
-                      },
-                      value: hour,)
-                  ]),
-                ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Padding(
-                      padding: EdgeInsets.only(
-                        bottom:10.0,
-                      ),
-                      child:Text(
-                        "MM",
-                        style: TextStyle(
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    NumberPicker(
-                      //initialValue: min
-                      minValue:0,
-                      maxValue:60,
-                      //listViewWidth: 60.0,
-                      onChanged: (val){
-                        setState(() {
-                          min = val;
-                        });
-                      },
-                      value:min,)
-                  ],
-                ),
-
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Padding(
-                      padding: EdgeInsets.only(
-                        bottom:10.0,
-                      ),
-                      child:Text(
-                        "SS",
-                        style: TextStyle(
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    NumberPicker(
-                      //initialValue: sec,
-                      minValue:0,
-                      maxValue:60,
-                      //listViewWidth: 60.0,
-                      onChanged: (val){
-                        setState(() {
-                          sec = val;
-                        });
-                      },
-                      value:sec,)
-                  ],
-                )
-
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Text(
-              timetodisplay,
-              style: TextStyle(
-                fontSize: 35.0,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                RaisedButton(
-                  onPressed: started ? start : null,
-                  padding: EdgeInsets.symmetric(
-                    horizontal:  40.0,
-                    vertical: 10.0,
-                  ),
-                  color: Colors.green,
-                  child: Text(
-                    "산책시작",
-                    style: TextStyle(
-                      fontSize: 18.0,
-                      color: Colors.white,
-                    ),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15.0),
-                  ),
-                ),
-
-                RaisedButton(
-                  onPressed: stopped ? null : stop,
-                  padding: EdgeInsets.symmetric(
-                    horizontal:  40.0,
-                    vertical: 10.0,
-                  ),
-                  color: Colors.red,
-                  child: Text(
-                    "산책완료",
-                    style: TextStyle(
-                      fontSize: 18.0,
-                      color: Colors.white,
-                    ),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15.0),
-                  ),
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  bool startispressed = true;
-  bool stopispressed = true;
-  bool resetispressed = true;
-  String stoptimetodisplay = '00:00:00';
-  var swatch = Stopwatch();
-  final dur = const Duration(seconds:1);
-
-  void starttimer(){
-    Timer(dur, keeprunning);
-  }
-
-  void keeprunning(){
-    if(swatch.isRunning){
-      starttimer();
-    }
-    setState(() {
-      stoptimetodisplay = swatch.elapsed.inHours.toString().padLeft(2,'0')+":"
-          + (swatch.elapsed.inMinutes%60).toString().padLeft(2, '0')+ ":"
-          + (swatch.elapsed.inSeconds%60).toString().padLeft(2, '0');
-    });
-  }
-
-  void startstopwatch(){
-    setState(() {
-      stopispressed = false;
-      startispressed = false;
-    });
-    swatch.start();
-    starttimer();
-  }
-  void stopstopwatch(){
-    setState(() {
-      stopispressed = true;
-      resetispressed =false;
-    });
-    swatch.stop();
-  }
-
-  void resetstopwatch(){
-    setState(() {
-      startispressed = true;
-      resetispressed = true;
-    });
-    swatch.reset();
-    stoptimetodisplay = '00:00:00';
-  }
-
-  Widget stopwatch(){
-    return Container(
-      child: Column(
-        children: <Widget>[
-          Expanded(
-            flex:6,
-            child: Container(
-              alignment: Alignment.center,
-              child: Text(
-                stoptimetodisplay,
-                style: TextStyle(
-                  fontSize: 50.0,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 4,
-            child: Container(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: <Widget>[
-                      RaisedButton(
-                        onPressed: stopispressed ? null: stopstopwatch,
-                        color: Colors.red,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 40.0,
-                          vertical: 15.0,
-                        ),
-                        child: Text(
-                          "산책 완료",
-                          style: TextStyle(
-                            fontSize: 20.0,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-
-                      RaisedButton(
-                        onPressed: resetispressed ? null: resetstopwatch,
-                        color: Colors.teal,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 40.0,
-                          vertical:15.0,
-                        ),
-                        child: Text(
-                          "Reset",
-                          style :TextStyle(
-                            fontSize: 20.0,
-                            color: Colors.white,
-                          ),
-                        ),
-                      )
+  Widget build(BuildContext context) {
+    return MaterialApp(
+        theme: ThemeData(
+          primaryColor: Colors.white,
+        ),
+        home: DefaultTabController(
+            length: 1,
+            child: Scaffold(
+                resizeToAvoidBottomInset: false,
+                appBar: AppBar(
+                  bottom: const TabBar(
+                    tabs: [
+                      Tab(text: '일기'),
                     ],
+                    labelStyle: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                    isScrollable: false,
+                    indicatorColor: Colors.lightGreen,
+                    indicatorWeight: 20,
                   ),
-                  RaisedButton(
-                    onPressed: startispressed ? startstopwatch: null,
-                    color: Colors.green, padding: EdgeInsets.symmetric(
-                    horizontal: 80.0,
-                    vertical: 20.0,
-                  ),
-                    child: Text(
-                      "산책 시작",
-                      style: TextStyle(
-                        fontSize: 24.0,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-        ],
-      ),
+                  title: const Text(' '),
+                  backgroundColor: Colors.white,
+                ),
+                body: Column(
+                  children: <Widget>[
+                    _pageOfTop(),
+                    _pageOfMiddle(),
+                    //-pageOfBottom(),
+                  ],
+
+                )
+            )
+        )
     );
   }
+}
+Widget _pageOfTop() {
+  return TableCalendar(
+    firstDay: DateTime.utc(2010, 1, 1),
+    lastDay: DateTime.utc(2040, 1, 31),
+    focusedDay: DateTime.now(),
+    locale: 'ko-KR',
+    daysOfWeekHeight: 30,
+    headerVisible: true,
+    daysOfWeekVisible: true,
+    shouldFillViewport: false,
+    headerStyle: HeaderStyle(formatButtonVisible: false, titleCentered: true, titleTextStyle: TextStyle(fontSize: 25, color: Colors.black,fontWeight: FontWeight.w800)),
+    calendarStyle: CalendarStyle(todayDecoration: BoxDecoration(color: Colors.transparent,shape: BoxShape.circle, border: Border.all(color: Colors.lightGreen, width: 1.5/*image: DecorationImage(image: AssetImage('images/icons/putprint.png')*/)),
+        todayTextStyle: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)
+    ),
+    /*eventLoader: (day){
+      if(day.day%2==0) {
+        return ['g'];
+      }
+      return
+        [];
+    },*/
+  );
+}
+
+Widget _pageOfMiddle() {
+  return BubbleBox(
+    shape: BubbleShapeBorder(
+      border: BubbleBoxBorder(
+          color: Colors.lightGreen,
+          width: 5,
+          style: BubbleBoxBorderStyle.dashed
+      ),
+      position: const BubblePosition.center(0),
+      direction: BubbleDirection.left,
+    ),
+    backgroundColor: Colors.transparent,
+    child: Text('이번 달 산책 횟수, 목적지 산책 거리, 시간 산책 시간 표시 \n\n\n'),
+  );
+}
 
 
+
+/*void main() {
+  runApp(MaterialApp(
+    title: 'Navigation Basics',
+    home: FirstRoute(),
+  ));
+}*/
+
+class FirstRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        centerTitle: false,
-        bottom: TabBar(
-          tabs: <Widget>[
-            Text(
-              "Timer",
-            ),
-            Text(
-              "Stopwatch",
-            ),
-          ],
-          labelPadding: EdgeInsets.only(
-            bottom: 10.0,
-          ),
-          labelStyle: TextStyle(
-            fontSize: 18.0,
-          ),
-          unselectedLabelColor: Colors.black26,
-          controller: tb,
+        title: Text('First Route'),
+      ),
+      body: Center(
+        child: RaisedButton(
+          child: Text('Open route'),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SecondRoute()),
+            );
+          },
         ),
       ),
-      body: TabBarView(
-        children: <Widget>[
-          Stack(
-            children: <Widget> [
-              Image.asset('images/home_bg.jpg'),
-              Positioned.fill(
-                child: timer(),
-              ),
-            ],
-          ),
-          Stack(
-            children: <Widget> [
-              Image.asset('images/home_bg.jpg'),
-              Positioned.fill(
-                child: stopwatch(),
-              ),
-            ],
-          ),
-        ],
-        controller: tb,
+    );
+  }
+}
+
+class SecondRoute extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Second Route"),
+      ),
+      body: Center(
+        child: RaisedButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: Text('Go back!'),
+        ),
       ),
     );
   }
