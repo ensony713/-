@@ -102,7 +102,7 @@ class _HomeState extends State<Home> {
                   1, 0, 0, 0,
                   0, 1, 0, 0,
                   0, 0, 1, 0,
-                  deviceWidth * 0.75, deviceHeight * 0.07, 0, 1,
+                  deviceWidth * 0.75, deviceHeight * 0.06, 0, 1,
                   // 4번째 행의 1열이 x좌표, 2열이 y좌표, 3열이 z좌표
                   // 화면의 세로가 x축, 화면의 가로가 y축, 화면에 수직이 z축
                 ),
@@ -127,7 +127,7 @@ class _HomeState extends State<Home> {
                   1, 0, 0, 0,
                   0, 1, 0, 0,
                   0, 0, 1, 0,
-                  deviceWidth * 0.56, deviceHeight * 0.1, 0, 1,
+                  deviceWidth * 0.56, deviceHeight * 0.075, 0, 1,
                 ),
                   alignment: FractionalOffset.center,
                   child: Stack(children: [
@@ -147,7 +147,7 @@ class _HomeState extends State<Home> {
                   1, 0, 0, 0,
                   0, 1, 0, 0,
                   0, 0, 1, 0,
-                  deviceWidth * 0.32, deviceHeight * 0.15, 0, 1,
+                  deviceWidth * 0.32, deviceHeight * 0.12, 0, 1,
                 ),
                   alignment: FractionalOffset.center,
                   child: Stack(children: [
@@ -167,7 +167,7 @@ class _HomeState extends State<Home> {
                   1, 0, 0, 0,
                   0, 1, 0, 0,
                   0, 0, 1, 0,
-                  deviceWidth * 0.52, deviceHeight * 0.24, 0, 1,
+                  deviceWidth * 0.52, deviceHeight * 0.175, 0, 1,
                 ),
                   alignment: FractionalOffset.center,
                   child: Stack(children: [
@@ -187,7 +187,7 @@ class _HomeState extends State<Home> {
                   1, 0, 0, 0,
                   0, 1, 0, 0,
                   0, 0, 1, 0,
-                  deviceWidth * 0.39, deviceHeight * 0.389, 0, 1,
+                  deviceWidth * 0.39, deviceHeight * 0.29, 0, 1,
                 ),
                   alignment: FractionalOffset.center,
                   child: Stack(children: [

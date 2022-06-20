@@ -49,6 +49,7 @@ class _LengthState extends State<Length> {
   String day = '';
 
   bool _isWalking = false; // 산책 중인지 아닌지, 산책 중이면 true.
+  bool _moveMode = false;
 
   String getDate() {
     DateTime now = DateTime.now();
@@ -147,19 +148,34 @@ class _LengthState extends State<Length> {
                   markers: _markers.toSet(),
                   polylines: Set<Polyline>.of(_polylines.values),
                   onTap: (chosen) {
-                    if(!_isWalking) { // 산책 중이 아닐 때만 탭한 위치에 마커 추가
+                    if(!_isWalking && !_moveMode) { // 산책 중이 아닐 때만 탭한 위치에 마커 추가
                       _addDestination(chosen);
+                    } else {
+                      _mapController.animateCamera(CameraUpdate.newLatLng(chosen));
                     }
                     // 산책 중일 땐 지도에 들어오는 터치 무시
                   },
                 ),
               ),
               Row(children: [
+                TextButton(
+                  onPressed: () {
+                    setState((){
+                      _moveMode = !_moveMode;
+                    });
+                  },
+                  child: _moveMode ? const Text("지도 이동") : const Text("목적지 선택"),
+                  style: TextButton.styleFrom(
+                      backgroundColor: _moveMode ? Colors.lightGreen : Colors.redAccent,
+                      primary: Colors.black
+                  ),
+                ),
+                SizedBox(width: deviceWidth * 0.03,),
                 Column( children:[ // 산책 거리를 보여줄 위젯
                   Text('총 산책 거리 ${_length}m'),
                   Text('목적지까지의 거리 ${_walkingLength}m'),
                 ]),
-                SizedBox(width: deviceWidth * 0.2,),
+                SizedBox(width: deviceWidth * 0.03,),
                 TextButton( // 길 안내 시작 / 산책 완료 버튼 위젯
                   onPressed: () async {
                     if (_isWalking) { // 산책 중일 때
@@ -172,7 +188,7 @@ class _LengthState extends State<Length> {
                         await updateLength(date, _length);
 
                         // 일기를 쓸지 질의하는 창 띄우기
-                        _askMakeDiary(context);
+                        askMakeDiary(context);
                       }
 
                       // 지도에서 목적지 마커 삭제
@@ -364,11 +380,11 @@ class _LengthState extends State<Length> {
   /// 만약에 팝업 창 띄우는 거 말고도 처리가 필요하다면, 
   /// onPressed: () {
   ///   구현하실 내용
-  ///   _askMakeDiary(context)
+  ///   askMakeDiary(context)
   /// } -> 이런식으로 사용하시면 됩니다
   /// 이게 화면 위에 Dairy 클래스를 띄우는거라서 하단 탭바가 안 떠요.. 이건 저도 해결해보고 싶었는데 딱히 방법이 없더라고요
   /// 돌아오는 건 뒤로가기 버튼으로 돌아올 수 있긴 해요.
-  void _askMakeDiary(BuildContext context) {
+  void askMakeDiary(BuildContext context) {
     showDialog(context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {

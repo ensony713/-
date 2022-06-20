@@ -170,10 +170,7 @@ Future<void> updateContent(String date, String content) async {
 }
 
 /// date를 key로 time만 업데이트. count는 자동으로 업데이트 되도록 구성됨
-/// ***주의*** 총 합계를 저장해야 합니다.
-/// 완료 버튼 선택 때 측정한 시간 아니고 총 산책 시간을 저장해야 돼요!
-/// ex, 총 산책 시간이 60분이었고, 이번에 20분의 산책을 했다면
-/// await updateTime('2022/05/30', 80 * 60); 이렇게 저장해야.
+/// 알아서 기존 값에 합해서 구해줌
 Future<void> updateTime(String date, int time) async {
   // DB reference 얻어옴
   final Database db = await createTable();
@@ -183,8 +180,7 @@ Future<void> updateTime(String date, int time) async {
   // 주어진 Recode를 수정함
   await db.update(
       'recode',
-      // 추가로 산책한 시간을 저장하고 싶다면 'time'의 value를 recode.time으로 변경
-      {'time' : time, 'count' : recode.count + 1},
+      {'time' : recode.time + time, 'count' : recode.count + 1},
       where: 'date = ?',
       whereArgs: [date]
   );
