@@ -16,6 +16,15 @@ class Diary extends StatefulWidget {
 }
 
 class _DiaryState extends State<Diary> {
+
+  @override
+  void initState() {
+    super.initState();
+    getDate();
+    getTime();
+    getLength();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -31,7 +40,8 @@ class _DiaryState extends State<Diary> {
                     tabs: [
                       Tab(text: '일기'),
                     ],
-                    labelStyle: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                    labelStyle: TextStyle(
+                        fontSize: 25, fontWeight: FontWeight.bold),
                     isScrollable: false,
                     indicatorColor: Colors.lightGreen,
                     indicatorWeight: 20,
@@ -42,10 +52,30 @@ class _DiaryState extends State<Diary> {
                 body: Column(
                   children: <Widget>[
                     _pageOfTop(),
-                    _pageOfMiddle(),
+                    GestureDetector(
+                        child: BubbleBox(
+                          shape: BubbleShapeBorder(
+                            border: BubbleBoxBorder(
+                                color: Colors.lightGreen,
+                                width: 5,
+                                style: BubbleBoxBorderStyle.dashed
+                            ),
+                            position: const BubblePosition.center(0),
+                            direction: BubbleDirection.left,
+                          ),
+                          backgroundColor: Colors.transparent,
+
+                          child: Text("오늘 시간 산책은 " '$_len' " 했구요" "\n"
+                              "오늘 목적지 산책은 " '$_time' "했어요!"),
+                        ),
+                        onTap: () async {
+                          getTime();
+                          getLength();
+                        }
+                    )
+                    //_pageOfMiddle(),
                     //-pageOfBottom(),
                   ],
-
                 )
             )
         )
@@ -76,13 +106,13 @@ Widget _pageOfTop() {
   );
 }
 
-Widget _pageOfMiddle() {
+/*Widget _pageOfMiddle() {
   return BubbleBox(
     shape: BubbleShapeBorder(
       border: BubbleBoxBorder(
-          color: Colors.lightGreen,
-          width: 5,
-          style: BubbleBoxBorderStyle.dashed
+        color: Colors.lightGreen,
+        width: 5,
+        style: BubbleBoxBorderStyle.dashed
       ),
       position: const BubblePosition.center(0),
       direction: BubbleDirection.left,
@@ -90,9 +120,9 @@ Widget _pageOfMiddle() {
     backgroundColor: Colors.transparent,
 
     child: Text("오늘 시간 산책은 " '$_len' " 했구요" "\n"
-        "오늘 목적지 산책은 " '$_time' "했어요!"),
+                "오늘 목적지 산책은 " '$_time' "했어요!"),
   );
-}
+}*/
 
 
 
@@ -103,7 +133,7 @@ Widget _pageOfMiddle() {
   ));
 }*/
 
-class FirstRoute extends StatelessWidget {
+/*class FirstRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -142,7 +172,8 @@ class SecondRoute extends StatelessWidget {
       ),
     );
   }
-}
+}*/
+
 int _len = 0;
 int _time = 0;
 String date = "";
@@ -172,3 +203,4 @@ Future<int> getTime() async {
 
   return _time;
 }
+
