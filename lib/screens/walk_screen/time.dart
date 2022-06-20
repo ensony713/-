@@ -333,9 +333,10 @@ class _TimeState extends State<Time> with TickerProviderStateMixin{
 
   @override
   Widget build(BuildContext context) {
+    final double deviceHeight = MediaQuery.of(context).size.height;
     return Scaffold(
         body: Column(children:[
-          const Padding(padding: EdgeInsets.only(top: 50)),
+          const Padding(padding: EdgeInsets.only(top: 150)),
           Stack(
             children: <Widget> [
               Image.asset('images/home_bg.jpg'),
