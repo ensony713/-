@@ -336,7 +336,7 @@ class _TimeState extends State<Time> with TickerProviderStateMixin{
     final double deviceHeight = MediaQuery.of(context).size.height;
     return Scaffold(
         body: Column(children:[
-          const Padding(padding: EdgeInsets.only(top: 150)),
+          Padding(padding: EdgeInsets.only(top: deviceHeight * 0.1)),
           Stack(
             children: <Widget> [
               Image.asset('images/home_bg.jpg'),

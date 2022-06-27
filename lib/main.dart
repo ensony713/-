@@ -3,9 +3,10 @@ import 'package:walking_test/screens/Home.dart';
 import 'package:walking_test/screens/diary.dart';
 import 'package:walking_test/screens/search.dart';
 import 'package:walking_test/screens/walk.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() {
-  runApp(const MyApp());
+  initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
