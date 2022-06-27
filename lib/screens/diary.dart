@@ -28,7 +28,14 @@ class _DiaryState extends State<Diary> {
       dowBuilder: (context, day) {
         for (DateTime time in dateList) {
           if (time == day) {
-            return Text("oh", style: TextStyle(color: Colors.green),);
+            final text = DateFormat.E().format(day);
+
+            return Center(
+              child: Text(
+                text,
+                style: const TextStyle(color: Colors.red),
+              ),
+            );
           }
         }
       }
@@ -126,8 +133,18 @@ class _DiaryState extends State<Diary> {
       headerVisible: true,
       daysOfWeekVisible: true,
       shouldFillViewport: false,
-      headerStyle: const HeaderStyle(formatButtonVisible: false, titleCentered: true, titleTextStyle: TextStyle(fontSize: 25, color: Colors.black,fontWeight: FontWeight.w800)),
-      calendarStyle: CalendarStyle(todayDecoration: BoxDecoration(color: Colors.transparent,shape: BoxShape.circle, border: Border.all(color: Colors.lightGreen, width: 1.5/*image: DecorationImage(image: AssetImage('images/icons/putprint.png')*/)),
+      headerStyle:
+      const HeaderStyle(
+          formatButtonVisible: false,
+          titleCentered: true,
+          titleTextStyle: TextStyle(
+              fontSize: 25, color: Colors.black,fontWeight: FontWeight.w800)
+      ),
+      calendarStyle: CalendarStyle(
+          todayDecoration: BoxDecoration(
+              color: Colors.transparent,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.lightGreen, width: 1.5)),
           todayTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)
       ),
       eventLoader: (day) {
@@ -136,7 +153,15 @@ class _DiaryState extends State<Diary> {
         }
         return [];
       },
-      //calendarBuilders: calendarBuilders(),
+
+    );
+  }
+
+  Widget _walkingMarker() {
+    return const Icon(
+      Icons.ac_unit,
+      size: 20,
+      color: Colors.grey,
     );
   }
 }
