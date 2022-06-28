@@ -155,7 +155,7 @@ class _ThirdState extends State<third> {
                       print("위치 정보 성공적으로 받아옴 " + sy + ", " + dong);
                       _addr = sy + ", " + dong;
 
-                      _controller.animateCamera(CameraUpdate.newLatLngZoom(lm.now, 14.0));
+                      _controller.animateCamera(CameraUpdate.newLatLng(lm.now));
 
                       setState(() {
                         _setPosition = true;

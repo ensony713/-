@@ -11,16 +11,28 @@ class Diary extends StatefulWidget {
 
 class _DiaryState extends State<Diary> {
 
+  late ScrollController _scrollController;
+  late TextEditingController _textEditingController;
+
   List<DateTime> dateList = [];
   Map<String, bool> dataExist = {};
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
+    //_textEditingController = TextEditingController();
     getDate();
     getTime();
     getLength();
     getRecode();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _textEditingController.dispose();
+    super.dispose();
   }
 
   CalendarBuilders calendarBuilders() {
@@ -84,7 +96,7 @@ class _DiaryState extends State<Diary> {
                   title: const Text(' '),
                   backgroundColor: Colors.white,
                 ),
-                body: Column(
+                body: SingleChildScrollView(child: Column(
                   children: <Widget>[
                     _pageOfTop(),
                     GestureDetector(
@@ -107,61 +119,115 @@ class _DiaryState extends State<Diary> {
                         ),
                         onTap: () async {
                           getDate();
-                          await getTime();
-                          _timeFormat = timeFormat();
+                          int time = await getTime();
+                          _timeFormat = timeFormat(time);
                           await getLength();
 
                           setState((){});
                         }
                     )
-                    //_pageOfMiddle(),
-                    //-pageOfBottom(),
                   ],
-                )
+                ))
             )
         )
     );
   }
 
   Widget _pageOfTop() {
-    return TableCalendar(
-      firstDay: DateTime.utc(2010, 1, 1),
-      lastDay: DateTime.utc(2040, 1, 31),
-      focusedDay: DateTime.now(),
-      locale: 'ko-KR',
-      daysOfWeekHeight: 30,
-      headerVisible: true,
-      daysOfWeekVisible: true,
-      shouldFillViewport: false,
-      headerStyle:
-      const HeaderStyle(
-          formatButtonVisible: false,
-          titleCentered: true,
-          titleTextStyle: TextStyle(
-              fontSize: 25, color: Colors.black,fontWeight: FontWeight.w800)
-      ),
-      calendarStyle: CalendarStyle(
-          todayDecoration: BoxDecoration(
-              color: Colors.transparent,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.lightGreen, width: 1.5)),
-          todayTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)
-      ),
-      eventLoader: (day) {
-        if(dataExist.containsKey('${day.month}/${day.day}') && dataExist['${day.month}/${day.day}'] == true) {
-          return ['exist'];
-        }
-        return [];
-      },
+    final deviceWidth = MediaQuery.of(context).size.width;
+    final deviceHeight = MediaQuery.of(context).size.height;
 
-    );
-  }
-
-  Widget _walkingMarker() {
-    return const Icon(
-      Icons.ac_unit,
-      size: 20,
-      color: Colors.grey,
+    return SingleChildScrollView(
+        child: TableCalendar(
+          firstDay: DateTime.utc(2010, 1, 1),
+          lastDay: DateTime.utc(2040, 1, 31),
+          focusedDay: DateTime.now(),
+          locale: 'ko-KR',
+          daysOfWeekHeight: 30,
+          headerVisible: true,
+          daysOfWeekVisible: true,
+          shouldFillViewport: false,
+          headerStyle:
+          const HeaderStyle(
+              formatButtonVisible: false,
+              titleCentered: true,
+              titleTextStyle: TextStyle(
+                  fontSize: 25, color: Colors.black,fontWeight: FontWeight.w800)
+          ),
+          calendarStyle: CalendarStyle(
+              todayDecoration: BoxDecoration(
+                  color: Colors.transparent,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.lightGreen, width: 1.5)),
+              todayTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)
+          ),
+          calendarBuilders: CalendarBuilders(
+              markerBuilder: (context, datetime, event) {
+                if(dataExist.containsKey('${datetime.month}/${datetime.day}')
+                    && dataExist['${datetime.month}/${datetime.day}'] == true) {
+                  return Container(
+                      width: 50,
+                      height: 50,
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage('images/home_put.png'),
+                        ),
+                      )
+                  );
+                }
+              }),
+          onDaySelected: (day, date) async {
+            DateFormat format = DateFormat('yyyy/MM/dd');
+            Recode recode = await getDateRecode(format.format(day));
+            String tf = timeFormat(recode.time);
+            String content = recode.content == "non" ? '': recode.content;
+            showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    content: SingleChildScrollView(
+                        child: Column(children:[
+                          Text('${day.month}월 ${day.day}일\n${recode.length}m    $tf'),
+                          SizedBox(
+                              width: deviceWidth * 0.7,
+                              height: deviceHeight * 0.5,
+                              child: TextField(
+                                controller: _textEditingController = TextEditingController(text: content),
+                                decoration: const InputDecoration(
+                                  labelText: '일기',
+                                  hintText: '일기',
+                                  focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                                      borderSide: BorderSide(
+                                          width: 1, color: Colors.lightGreen)
+                                  ),
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                                      borderSide: BorderSide(
+                                          width: 1, color: Colors.lightGreen)
+                                  ),
+                                ),
+                                maxLines: 10,
+                                minLines: 1,
+                                maxLength: 200,
+                                keyboardType: TextInputType.multiline,
+                              )
+                          )
+                        ])
+                    ),
+                    actions: [
+                      TextButton(onPressed: (){
+                        updateContent(format.format(day), _textEditingController.text);
+                        Navigator.of(context).pop();
+                        }, child: const Text("저장")),
+                      TextButton(onPressed: (){
+                        Navigator.of(context).pop();
+                        }, child: const Text("취소"))
+                    ],
+                  );
+                });
+            },
+        )
     );
   }
 }
@@ -199,10 +265,10 @@ Future<int> getTime() async {
   return _time;
 }
 
-String timeFormat () {
+String timeFormat (int time) {
   int h, m, s, tmp;
-  h = _time ~/ 3600;
-  tmp = _time - (3600 * h);
+  h = time ~/ 3600;
+  tmp = time - (3600 * h);
   m = tmp ~/ 60;
   s = tmp % 60;
   return h.toString() +  "시간 " + m.toString() + "분 " + s.toString() + "초";

@@ -336,7 +336,7 @@ class _LengthState extends State<Length> {
 
         setState((){
           _markers.add(_currentMarker);
-          _mapController.animateCamera(CameraUpdate.newLatLngZoom(lm.now, 14.0));
+          _mapController.animateCamera(CameraUpdate.newLatLng(lm.now));
         });
       }
     });
