@@ -21,7 +21,6 @@ class _DiaryState extends State<Diary> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    //_textEditingController = TextEditingController();
     getDate();
     getTime();
     getLength();
@@ -74,6 +73,7 @@ class _DiaryState extends State<Diary> {
 
   @override
   Widget build(BuildContext context) {
+    final deviceHeight = MediaQuery.of(context).size.height;
     return MaterialApp(
         theme: ThemeData(
           primaryColor: Colors.white,
@@ -99,6 +99,7 @@ class _DiaryState extends State<Diary> {
                 body: SingleChildScrollView(child: Column(
                   children: <Widget>[
                     _pageOfTop(),
+                    SizedBox(height: deviceHeight * 0.05,),
                     GestureDetector(
                         child: BubbleBox(
                           shape: BubbleShapeBorder(
@@ -114,7 +115,8 @@ class _DiaryState extends State<Diary> {
 
                           child: Text("오늘은 " '$_count' "번 산책을 했네요!\n"
                               "목적지 산책은 $_len" "m를 했고요,\n"
-                              "시간 산책은 $_timeFormat를 했어요!"
+                              "시간 산책은 $_timeFormat를 했어요!",
+                            style: const TextStyle(fontSize: 20),
                           ),
                         ),
                         onTap: () async {
@@ -122,7 +124,6 @@ class _DiaryState extends State<Diary> {
                           int time = await getTime();
                           _timeFormat = timeFormat(time);
                           await getLength();
-
                           setState((){});
                         }
                     )
@@ -185,9 +186,15 @@ class _DiaryState extends State<Diary> {
                 context: context,
                 builder: (BuildContext context) {
                   return AlertDialog(
+                    title: Text('${day.month}월 ${day.day}일'
+                        '                ${recode.length}m,  $tf',
+                      textAlign: TextAlign.center,
+                    ),
                     content: SingleChildScrollView(
                         child: Column(children:[
-                          Text('${day.month}월 ${day.day}일\n${recode.length}m    $tf'),
+                          SizedBox(
+                            height: deviceHeight * 0.02,
+                          ),
                           SizedBox(
                               width: deviceWidth * 0.7,
                               height: deviceHeight * 0.5,
@@ -201,19 +208,16 @@ class _DiaryState extends State<Diary> {
                                       borderSide: BorderSide(
                                           width: 1, color: Colors.lightGreen)
                                   ),
-                                  border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                                      borderSide: BorderSide(
-                                          width: 1, color: Colors.lightGreen)
-                                  ),
                                 ),
-                                maxLines: 10,
+                                maxLines: 20,
                                 minLines: 1,
                                 maxLength: 200,
                                 keyboardType: TextInputType.multiline,
-                              )
-                          )
-                        ])
+                              ),
+                          ),
+                        ],
+                          mainAxisSize: MainAxisSize.min,
+                        ),
                     ),
                     actions: [
                       TextButton(onPressed: (){
