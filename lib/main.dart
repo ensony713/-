@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:walking_googlemap/screens/Home.dart';
-import 'package:walking_googlemap/screens/walk.dart';
 import 'package:walking_googlemap/screens/diary.dart';
 import 'package:walking_googlemap/screens/search.dart';
+import 'package:walking_googlemap/screens/walk.dart';
 
 void main() {
   runApp(const MyApp());

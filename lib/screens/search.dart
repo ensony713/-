@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 import 'dart:io';
 import 'dart:async';
 
@@ -8,6 +7,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+
+import 'package:walking_googlemap/class/LocationManager.dart';
 
 class third extends StatefulWidget {
   @override
@@ -20,9 +21,11 @@ class _ThirdState extends State<third> {
     target: LatLng(37.011289, 127.265021),
     zoom: 14.0,
   );
-  LatLng _currentPosition = const LatLng(37.011287, 127.265188); // 현재 위치
+
+  LocationManager lm = LocationManager();
+
   late Marker _currentMark; // 현재 위치 마커
-  late String _now; // 현재 위치 - 한글로 시, 동
+  late String _addr; // 현재 위치 - 한글로 시, 동
   bool _setPosition = false; // 현재 위치가 찾아져 있으면 true
   final List<Marker> _markers = []; // 지도에 띄울 마커 list
   late final BitmapDescriptor _markerIcon; // 현재 위치 마커 아이콘 객체
@@ -83,14 +86,20 @@ class _ThirdState extends State<third> {
     _onHospitalTab = false;
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    _controller.dispose();
+  }
+
   void setIcon() async {
     _markerIcon = await BitmapDescriptor.fromAssetImage(
         const ImageConfiguration(devicePixelRatio: 2.5),
         'images/icons/putprint_pin.png'
     );
     _naviIcon = await BitmapDescriptor.fromAssetImage(
-      const ImageConfiguration(devicePixelRatio: 1),
-      'images/icons/wayPoint.png'
+        const ImageConfiguration(devicePixelRatio: 1),
+        'images/icons/wayPoint.png'
     );
   }
 
@@ -101,7 +110,7 @@ class _ThirdState extends State<third> {
     final deviceArea = deviceHeight * deviceWidth;
 
     return GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(), 
+        onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
           child: Column(
             children: <Widget> [
@@ -115,25 +124,25 @@ class _ThirdState extends State<third> {
                 Padding(
                   padding: EdgeInsets.fromLTRB(deviceWidth * 0.07, deviceHeight * 0.075, 0, deviceHeight * 0.025),
                   child: GestureDetector(
-                      child: Container(
-                        width: deviceWidth * 0.58,
-                        height: deviceHeight * 0.05,
-                        child: Center(
-                          child: Text(_setPosition ? _now : "터치해서 현재 위치 찾기",
-                            style: TextStyle(fontSize: deviceArea * 0.000043, color: Colors.lightGreen[900]),),
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.lightGreen[100],
-                          borderRadius: BorderRadius.circular(5.0),
-                          border: Border.all(width: 2.0, color: Colors.lightGreen.shade700),
-                        ),
+                    child: Container(
+                      width: deviceWidth * 0.58,
+                      height: deviceHeight * 0.05,
+                      child: Center(
+                        child: Text(_setPosition ? _addr : "터치해서 현재 위치 찾기",
+                          style: TextStyle(fontSize: deviceArea * 0.000043, color: Colors.lightGreen[900]),),
                       ),
+                      decoration: BoxDecoration(
+                        color: Colors.lightGreen[100],
+                        borderRadius: BorderRadius.circular(5.0),
+                        border: Border.all(width: 2.0, color: Colors.lightGreen.shade700),
+                      ),
+                    ),
                     onTap: () async {
-                        getLocation();
+                      getLocation();
                       final url = Uri.parse("https://maps.googleapis.com/"
                           "maps/api/geocode/json?latlng="
-                          "${_currentPosition.latitude.toString()},"
-                          "${_currentPosition.longitude.toString()}"
+                          "${lm.now.latitude.toString()},"
+                          "${lm.now.longitude.toString()}"
                           "&language=ko"
                           "&key=AIzaSyCxnMmwLCN6PlyGaqXd8Z7BTqCbVQ35bXk");
                       // 구글 Geocoding API 요청 url
@@ -144,9 +153,9 @@ class _ThirdState extends State<third> {
                       String sy = jsonDecode(response.body)['results'][1]['address_components'][2]['long_name'];
                       // json 형식으로 들어옴
                       print("위치 정보 성공적으로 받아옴 " + sy + ", " + dong);
-                      _now = sy + ", " + dong;
+                      _addr = sy + ", " + dong;
 
-                      _controller.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition, 14.0));
+                      _controller.animateCamera(CameraUpdate.newLatLngZoom(lm.now, 14.0));
 
                       setState(() {
                         _setPosition = true;
@@ -175,7 +184,7 @@ class _ThirdState extends State<third> {
                   children: [
                     InkWell(
                       child: Container(
-                          child: Image.asset('images/icons/salon.png', width: 30, height: 30,),
+                        child: Image.asset('images/icons/salon.png', width: 30, height: 30,),
                         color: _onSalonTab ? Colors.lightGreen[300] : Colors.lightGreen[100],
                         padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
                       ),
@@ -187,7 +196,7 @@ class _ThirdState extends State<third> {
                         color: _onPakrTab ? Colors.lightGreen[300] : Colors.lightGreen[100],
                         padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
                       ),
-                        onTap: _choosePark,
+                      onTap: _choosePark,
                     ),
                     const SizedBox(width: 40,),
                     InkWell(
@@ -238,76 +247,76 @@ class _ThirdState extends State<third> {
                 ),
               ),
               SizedBox(
-                  width: deviceWidth * 0.98,
-                  child: _onMarkerTab ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(height: deviceHeight * 0.01,),
-                      Row(
-                        children: [
-                          SizedBox(width: deviceWidth * 0.01,),
-                          Text(facilityName,
-                            style: TextStyle(fontSize: deviceArea * 0.00005,
-                              fontWeight: FontWeight.bold,
-                            ),
+                width: deviceWidth * 0.98,
+                child: _onMarkerTab ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: deviceHeight * 0.01,),
+                    Row(
+                      children: [
+                        SizedBox(width: deviceWidth * 0.01,),
+                        Text(facilityName,
+                          style: TextStyle(fontSize: deviceArea * 0.00005,
+                            fontWeight: FontWeight.bold,
                           ),
-                          SizedBox(width: deviceWidth * 0.02,),
-                          Text(category,
-                            style: TextStyle(fontSize: deviceArea * 0.000035,
-                              color: Colors.black45,
-                            ),
+                        ),
+                        SizedBox(width: deviceWidth * 0.02,),
+                        Text(category,
+                          style: TextStyle(fontSize: deviceArea * 0.000035,
+                            color: Colors.black45,
                           ),
-                          SizedBox(width: deviceWidth * 0.06,),
-                          _isNear ? Text(recommend,
+                        ),
+                        SizedBox(width: deviceWidth * 0.06,),
+                        _isNear ? Text(recommend,
                             style: TextStyle(
                               fontSize: deviceArea * 0.00004,
                               fontWeight: FontWeight.bold,
                               color: Colors.redAccent,
                             )
-                          ) : const SizedBox(width: 0,),
-                          SizedBox(width: deviceWidth * 0.03,),
-                          Text(facilityWidth,
-                            style: TextStyle(fontSize: deviceArea * 0.000045,
-                              color: Colors.black45,
-                            ),
+                        ) : const SizedBox(width: 0,),
+                        SizedBox(width: deviceWidth * 0.03,),
+                        Text(facilityWidth,
+                          style: TextStyle(fontSize: deviceArea * 0.000045,
+                            color: Colors.black45,
                           ),
-                        ],
-                      ),
-                      Text(facilityAddr,
-                        style: const TextStyle(color: Colors.black54),
-                      ),
-                      _isNaviWork ? const SizedBox() : TextButton(onPressed: () {
-                        if(!_isNaviWork) {
-                          _isNaviWork = true;
-
-                          print('길 안내 버튼이 클릭됐어요.');
-                          print('$facilityName까지의 길안내를 출력합니다.');
-
-                          _navigationPoint.add(_currentPosition);
-                          // 길 안내 google Directions API 이용
-                          _navigation();
-
-                          Polyline line = Polyline(
-                              polylineId: const PolylineId('navigation'),
-                              color: Colors.blue,
-                              points: _navigationPoint,
-                              width: 4);
-
-                          setState(() {
-                            _polylines[const PolylineId('navigation')] = line;
-                          });
-                        }},
-                        child: const Text('길 안내'),
-                        style: TextButton.styleFrom(
-                          textStyle: TextStyle(fontSize: deviceArea * 0.00004),
-                          primary: Colors.black,
-                          backgroundColor: Colors.lightGreen,
-                          minimumSize: const Size(3, 3),
-                          shape: const BeveledRectangleBorder(),
                         ),
+                      ],
+                    ),
+                    Text(facilityAddr,
+                      style: const TextStyle(color: Colors.black54),
+                    ),
+                    _isNaviWork ? const SizedBox() : TextButton(onPressed: () {
+                      if(!_isNaviWork) {
+                        _isNaviWork = true;
+
+                        print('길 안내 버튼이 클릭됐어요.');
+                        print('$facilityName까지의 길안내를 출력합니다.');
+
+                        _navigationPoint.add(lm.now);
+                        // 길 안내 google Directions API 이용
+                        _navigation();
+
+                        Polyline line = Polyline(
+                            polylineId: const PolylineId('navigation'),
+                            color: Colors.blue,
+                            points: _navigationPoint,
+                            width: 4);
+
+                        setState(() {
+                          _polylines[const PolylineId('navigation')] = line;
+                        });
+                      }},
+                      child: const Text('길 안내'),
+                      style: TextButton.styleFrom(
+                        textStyle: TextStyle(fontSize: deviceArea * 0.00004),
+                        primary: Colors.black,
+                        backgroundColor: Colors.lightGreen,
+                        minimumSize: const Size(3, 3),
+                        shape: const BeveledRectangleBorder(),
                       ),
-                    ],
-                  ) : const SizedBox(width: 5,),
+                    ),
+                  ],
+                ) : const SizedBox(width: 5,),
               ),
             ],
           ),
@@ -318,13 +327,13 @@ class _ThirdState extends State<third> {
   Marker _createMarker() {
     if (_markers.isEmpty){
       return _currentMark = Marker(markerId: const MarkerId("now"),
-          position: _currentPosition,
+          position: lm.now,
           icon: _markerIcon
       );
     } else {
       _markers.remove(_currentMark);
       return _currentMark = Marker(markerId: const MarkerId("now"),
-          position: _currentPosition,
+          position: lm.now,
           icon: _markerIcon
       );
     }
@@ -357,8 +366,8 @@ class _ThirdState extends State<third> {
 
       lat = double.parse(position.latitude.toString());
       lon = double.parse(position.longitude.toString());
-      _currentPosition = LatLng(lat, lon);
-      _controller.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition, 14));
+      lm.now = LatLng(lat, lon);
+      _controller.animateCamera(CameraUpdate.newLatLngZoom(lm.now, 14));
     }
   }
 
@@ -368,7 +377,7 @@ class _ThirdState extends State<third> {
 
     LatLng p = LatLng(lat, lon);
     double distance = Geolocator.distanceBetween(
-        _currentPosition.latitude, _currentPosition.longitude,
+        lm.now.latitude, lm.now.longitude,
         p.latitude, p.longitude
     );
     print(distance);
@@ -380,10 +389,10 @@ class _ThirdState extends State<third> {
         // 약 20개의 검색 결과가 반환되는데, 가장 가까운 지점이 가장 먼저 들어오는 양상을 보임
 
         marker = Marker(markerId: MarkerId(id),
-            position: p,
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueGreen),
-            onTap: () => _markerTap(name, addr, p, i, true),
+          position: p,
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueGreen),
+          onTap: () => _markerTap(name, addr, p, i, true),
         );
 
         setState(() {
@@ -393,8 +402,8 @@ class _ThirdState extends State<third> {
         id = i.toString();
 
         marker = Marker(markerId: MarkerId(id),
-            position: p,
-            onTap: () => _markerTap(name, addr, p, i, false),
+          position: p,
+          onTap: () => _markerTap(name, addr, p, i, false),
         );
 
         setState(() {
@@ -408,7 +417,7 @@ class _ThirdState extends State<third> {
     print("주소 : " + addr);
 
     var exactDistance = Geolocator.distanceBetween(
-        _currentPosition.latitude, _currentPosition.longitude,
+        lm.now.latitude, lm.now.longitude,
         p.latitude, p.longitude);
     String distanceMater = exactDistance.toInt().toString() + "m";
 
@@ -452,7 +461,7 @@ class _ThirdState extends State<third> {
     }
 
     final url = Uri.parse("https://maps.googleapis.com/maps/api/directions/json"
-        "?origin=${_currentPosition.latitude},${_currentPosition.longitude}" // 출발점
+        "?origin=${lm.now.latitude},${lm.now.longitude}" // 출발점
         "&destination=$facilityName" // 도착점
         "&mode=transit" // 어떤 방식의 길안내인지
         "&language=ko" // 반환값의 언어
@@ -516,7 +525,7 @@ class _ThirdState extends State<third> {
 
     final url = Uri.parse("https://maps.googleapis.com/maps/api/place/textsearch/json"
         "?query= 애완동물 미용" // 검색어
-        "&location=${_currentPosition.latitude}%2C${_currentPosition.longitude}" // 검색 중심지
+        "&location=${lm.now.latitude}%2C${lm.now.longitude}" // 검색 중심지
         "&radius=500" // 검색 범위(m)
         "&language=ko" // 반환값의 언어
         "&type=salon" // 시설 카테고리
@@ -557,7 +566,7 @@ class _ThirdState extends State<third> {
 
     final url = Uri.parse("https://maps.googleapis.com/maps/api/place/textsearch/json"
         "?query=동물병원" // 검색어
-        "&location=${_currentPosition.latitude}%2C${_currentPosition.longitude}" // 검색 중심지
+        "&location=${lm.now.latitude}%2C${lm.now.longitude}" // 검색 중심지
         "&radius=500" // 검색 범위(m)
         "&language=ko" // 반환값의 언어
         "&type=동물병원" // 시설 카테고리
@@ -598,7 +607,7 @@ class _ThirdState extends State<third> {
 
     final url = Uri.parse("https://maps.googleapis.com/maps/api/place/textsearch/json"
         "?query=반려 호텔" // 검색어
-        "&location=${_currentPosition.latitude}%2C${_currentPosition.longitude}" // 검색 중심지
+        "&location=${lm.now.latitude}%2C${lm.now.longitude}" // 검색 중심지
         "&radius=500" // 검색 범위(m)
         "&language=ko" // 반환값의 언어
         "&key=AIzaSyCxnMmwLCN6PlyGaqXd8Z7BTqCbVQ35bXk");
@@ -638,7 +647,7 @@ class _ThirdState extends State<third> {
 
     final url = Uri.parse("https://maps.googleapis.com/maps/api/place/textsearch/json"
         "?query=공원" // 검색어
-        "&location=${_currentPosition.latitude}%2C${_currentPosition.longitude}" // 검색 중심지
+        "&location=${lm.now.latitude}%2C${lm.now.longitude}" // 검색 중심지
         "&radius=500" // 검색 범위(m)
         "&language=ko" // 반환값의 언어
         "&key=AIzaSyCxnMmwLCN6PlyGaqXd8Z7BTqCbVQ35bXk");
@@ -679,8 +688,7 @@ class _ThirdState extends State<third> {
     final url = Uri.parse(
         "https://maps.googleapis.com/maps/api/place/textsearch/json"
             "?query=애완용품" // 검색어
-            "&location=${_currentPosition.latitude}%2C${_currentPosition
-            .longitude}" // 검색 중심지
+            "&location=${lm.now.latitude}%2C${lm.now.longitude}" // 검색 중심지
             "&radius=500" // 검색 범위(m)
             "&language=ko" // 반환값의 언어
             "&key=AIzaSyCxnMmwLCN6PlyGaqXd8Z7BTqCbVQ35bXk");

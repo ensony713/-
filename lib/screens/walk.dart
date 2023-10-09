@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:walking_googlemap/screens/walk_screen/length.dart';
 import 'package:walking_googlemap/screens/walk_screen/time.dart';

@@ -1,6 +1,4 @@
-
 import 'dart:collection';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -65,12 +63,18 @@ class _DiaryState extends State<Diary> {
                           ),
                           backgroundColor: Colors.transparent,
 
-                          child: Text("오늘 시간 산책은 " '$_len' " 했구요" "\n"
-                              "오늘 목적지 산책은 " '$_time' "했어요!"),
+                          child: Text("오늘은 " '$_count' "번 산책을 했네요!\n"
+                              "목적지 산책은 $_len" "m를 했고요,\n"
+                              "시간 산책은 $_timeFormat를 했어요!"
+                          ),
                         ),
                         onTap: () async {
-                          getTime();
-                          getLength();
+                          getDate();
+                          await getTime();
+                          _timeFormat = timeFormat();
+                          await getLength();
+
+                          setState((){});
                         }
                     )
                     //_pageOfMiddle(),
@@ -82,19 +86,20 @@ class _DiaryState extends State<Diary> {
     );
   }
 }
+
 Widget _pageOfTop() {
   return TableCalendar(
     firstDay: DateTime.utc(2010, 1, 1),
     lastDay: DateTime.utc(2040, 1, 31),
     focusedDay: DateTime.now(),
-    locale: 'ko-KR',
+    //locale: 'ko-KR',
     daysOfWeekHeight: 30,
     headerVisible: true,
     daysOfWeekVisible: true,
     shouldFillViewport: false,
-    headerStyle: HeaderStyle(formatButtonVisible: false, titleCentered: true, titleTextStyle: TextStyle(fontSize: 25, color: Colors.black,fontWeight: FontWeight.w800)),
+    headerStyle: const HeaderStyle(formatButtonVisible: false, titleCentered: true, titleTextStyle: TextStyle(fontSize: 25, color: Colors.black,fontWeight: FontWeight.w800)),
     calendarStyle: CalendarStyle(todayDecoration: BoxDecoration(color: Colors.transparent,shape: BoxShape.circle, border: Border.all(color: Colors.lightGreen, width: 1.5/*image: DecorationImage(image: AssetImage('images/icons/putprint.png')*/)),
-        todayTextStyle: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)
+        todayTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)
     ),
     /*eventLoader: (day){
       if(day.day%2==0) {
@@ -118,7 +123,6 @@ Widget _pageOfTop() {
       direction: BubbleDirection.left,
     ),
     backgroundColor: Colors.transparent,
-
     child: Text("오늘 시간 산책은 " '$_len' " 했구요" "\n"
                 "오늘 목적지 산책은 " '$_time' "했어요!"),
   );
@@ -154,7 +158,6 @@ Widget _pageOfTop() {
     );
   }
 }
-
 class SecondRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -176,8 +179,10 @@ class SecondRoute extends StatelessWidget {
 
 int _len = 0;
 int _time = 0;
+int _count = 0;
 String date = "";
 String day = '';
+String _timeFormat = '0시간 0분 0초';
 
 String getDate() {
   DateTime now = DateTime.now();
@@ -192,6 +197,7 @@ String getDate() {
 Future<int> getLength() async {
   Recode recode = await getDateRecode(date);
   _len = recode.length;
+  _count = recode.count;
 
   return _len;
 }
@@ -204,3 +210,11 @@ Future<int> getTime() async {
   return _time;
 }
 
+String timeFormat () {
+  int h, m, s, tmp;
+  h = _time ~/ 3600;
+  tmp = _time - (3600 * h);
+  m = tmp ~/ 60;
+  s = tmp % 60;
+  return h.toString() +  "시간 " + m.toString() + "분 " + s.toString() + "초";
+}

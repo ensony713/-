@@ -86,9 +86,7 @@ Future<List<Recode>> getRecode() async {
 
 /// date를 key로 데이터 가져오기
 /// 만약 date를 key로 갖는 데이터가 없다면, 새로 생성하고 초기값을 가져옴.
-/// yyyy/MM/dd    Recode recode = await getDataRecode('2022/05/30');
-/// recode.time
-/// 반환 Future<Recode>, 없으면 Future<void>
+/// ex, Recode recode = await getDataRecode('2022/05/30'); 5월 30일의 산책 기록을 다 가져옴.
 Future<Recode> getDateRecode(String date) async {
   // DB reference 얻어옴
   final Database db = await createTable();
@@ -148,16 +146,31 @@ Future<void> updateLength(String date, int length) async {
 
   // 주어진 Recode를 수정함
   await db.update(
-    'recode',
-    recode.toMap(),
-    where: 'date = ?',
-    whereArgs: [date]
+      'recode',
+      recode.toMap(),
+      where: 'date = ?',
+      whereArgs: [date]
+  );
+}
+
+/// 일기 내용만 저장하는 메소드. 기존에 내용이 삭제되기 때문에 최초 생성 등에서만 사용해야 해요
+/// 일기 수정의 경우 어차피 내용을 받아와서 text field의 기본값으로 넣어주고 사용해야 하기 때문에
+/// 추가하는 메소드 등은 만들지 않았습니다
+Future<void> updateContent(String date, String content) async {
+  // DB reference 얻어옴
+  final Database db = await createTable();
+
+  // 주어진 Recode를 수정함
+  await db.update(
+      'recode',
+      {'content' : content},
+      where: 'date = ?',
+      whereArgs: [date]
   );
 }
 
 /// date를 key로 time만 업데이트. count는 자동으로 업데이트 되도록 구성됨
-/// ***주의*** 총 합계를 저장해야 합니다.
-/// 완료 버튼 선택 때 측정한 시간 아니고 총 산책 시간을 저장해야 돼요!
+/// 알아서 기존 값에 합해서 구해줌
 Future<void> updateTime(String date, int time) async {
   // DB reference 얻어옴
   final Database db = await createTable();
@@ -167,7 +180,7 @@ Future<void> updateTime(String date, int time) async {
   // 주어진 Recode를 수정함
   await db.update(
       'recode',
-      {'time' : time, 'count' : recode.count + 1},
+      {'time' : recode.time + time, 'count' : recode.count + 1},
       where: 'date = ?',
       whereArgs: [date]
   );
